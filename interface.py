@@ -7,21 +7,26 @@ from politica import decidir_salto, limiar_salto
 
 
 def desenhar_decisao(tela, fonte, ambiente, sessao, modo):
-    peso, vies = sessao.parametros
-    limiar = limiar_salto(sessao.parametros)
+    peso_distancia, peso_altura, vies = sessao.parametros
+    altura = ambiente.obstaculo.height
+    limiar = limiar_salto(altura, sessao.parametros)
     cor = (185, 95, 15)
 
-    if peso == 0:
-        regra = "Pede salto em qualquer distância" if vies > 0 else "Nunca pede salto"
+    if peso_distancia == 0:
+        pedido_constante = decidir_salto(0, altura, sessao.parametros)
+        regra = (
+            "Nesta altura: pede salto em qualquer distância"
+            if pedido_constante else "Nesta altura: não pede salto"
+        )
     elif limiar is None:
         regra = "Limite de salto fora da escala de exibição"
     else:
-        sentido = "abaixo" if peso < 0 else "acima"
-        regra = f"Pede salto {sentido} de {limiar:.1f} px"
+        sentido = "abaixo" if peso_distancia < 0 else "acima"
+        regra = f"Nesta altura: pede salto {sentido} de {limiar:.1f} px"
         if limiar < 0:
-            regra += " (limite atrás do personagem)"
+            regra += " (atrás do personagem)"
 
-    pedido = decidir_salto(ambiente.distancia, sessao.parametros)
+    pedido = decidir_salto(ambiente.distancia, altura, sessao.parametros)
     if ambiente.fim_de_jogo or (modo == "avaliacao" and sessao.concluida):
         estado = "partida encerrada"
     elif not ambiente.no_chao:
@@ -32,13 +37,14 @@ def desenhar_decisao(tela, fonte, ambiente, sessao, modo):
         estado = "no chão"
 
     linhas = (
-        f"Peso: {peso:.4f} | Viés: {vies:.4f} | Distância: {ambiente.distancia} px",
+        f"Peso distância: {peso_distancia:.4f} | Peso altura: {peso_altura:.4f} | Viés: {vies:.4f}",
+        f"Distância: {ambiente.distancia} px | Altura do obstáculo: {altura} px",
         regra,
         f"Pedido nesta distância: {'SALTAR' if pedido else 'ESPERAR'} | {estado}",
     )
     for indice, linha in enumerate(linhas):
-        texto = fonte.render(linha, True, cor if indice == 1 else (40, 40, 40))
-        tela.blit(texto, (20, 120 + indice * 29))
+        texto = fonte.render(linha, True, cor if indice == 2 else (40, 40, 40))
+        tela.blit(texto, (20, 120 + indice * 24))
 
     # A distância é medida entre a frente do personagem e a frente do obstáculo.
     # A marca indica z = 0; o salto exige z > 0 e personagem no chão.

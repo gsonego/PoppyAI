@@ -1,6 +1,8 @@
 # PoppyAI
 
-Experimento de aprendizado com um neurônio e busca evolutiva, sem bibliotecas de machine learning.
+Experimento de aprendizado com dois nós de entrada (distância e altura do
+obstáculo), um neurônio de saída e busca evolutiva, sem bibliotecas de machine
+learning. A função de ativação é o degrau: pede salto quando `z > 0`.
 
 No PowerShell:
 
@@ -8,7 +10,7 @@ No PowerShell:
 .\.venv\Scripts\python.exe main.py
 ```
 
-Para observar a campeã salva, com peso e viés fixos:
+Para observar a campeã salva, com os dois pesos e o viés fixos:
 
 ```powershell
 .\.venv\Scripts\python.exe main.py --modo avaliacao
@@ -17,7 +19,7 @@ Para observar a campeã salva, com peso e viés fixos:
 O modo padrão continua sendo treino (também pode usar `--modo treino`).
 Na avaliação, a partida para na colisão ou no limite de 30 segundos e mantém
 o resultado na tela. R repete a mesma sequência desde o início; o salto
-manual fica desativado. Esse modo não gera mutações nem grava em `campeao.json`.
+manual fica desativado. Esse modo não gera mutações nem grava em `campeao_altura.json`.
 Se não houver campeã salva, o programa informa que é preciso treinar primeiro.
 
 Para avaliar em outra sequência de obstáculos:
@@ -31,13 +33,28 @@ sequências. O primeiro obstáculo continua igual. A semente aparece na tela e
 no terminal, e R reinicia com a semente escolhida. Sem `--semente`, a avaliação
 usa 123. Essa opção é exclusiva da avaliação; o treino continua usando 123.
 
-Nos dois modos, a tela mostra peso, viés, distância atual e o pedido da política
-nessa distância. A marca laranja no chão indica o limite em que a decisão muda:
-`limite = -viés / peso * LARGURA`. Com peso negativo, pede salto abaixo do limite;
-com peso positivo, acima. No limite exato, não pede salto (`z > 0`). Peso zero
-produz uma decisão constante e não tem marca. Limites negativos ou fora da tela
-continuam descritos no texto, sem uma marca visível no chão. O pedido só vira
-um salto quando o personagem está no chão e a distância é não negativa.
+Nos dois modos, a tela mostra os dois pesos, o viés, a distância, a altura e o
+pedido atual da política. As entradas são normalizadas pelas dimensões da janela:
+
+```python
+z = peso_distancia * (distancia / LARGURA) + peso_altura * (altura / ALTURA) + vies
+```
+
+A marca laranja no chão indica a distância em que a decisão muda, para a altura
+do obstáculo atual:
+`limite = -(peso_altura * (altura / ALTURA) + vies) / peso_distancia * LARGURA`.
+Com peso da distância negativo, pede salto abaixo do limite; com positivo,
+acima. No limite exato, não pede salto (`z > 0`, sujeito à precisão numérica).
+Peso da distância zero produz uma decisão que depende apenas da altura e do
+viés, sem marca de distância. Limites negativos ou fora da tela continuam
+descritos no texto, sem uma marca visível no chão. O pedido só vira um salto
+quando o personagem está no chão e a distância é não negativa.
+
+O modelo anterior, com apenas distância, permanece salvo em `campeao.json`.
+O modelo com altura usa a versão 2 do experimento e salva em
+`campeao_altura.json`. É necessário treiná-lo antes de avaliá-lo; o recorde
+antigo não é transferido. Adicionar uma entrada permite novas regras, mas
+não garante melhora do desempenho.
 
 ## Organização
 
@@ -46,13 +63,13 @@ um salto quando o personagem está no chão e a distância é não negativa.
 | `main.py` | Inicializar o Pygame e coordenar teclado, simulação, treino e desenho. |
 | `config.py` | Dimensões, física, passo fixo, sementes, limite e caminho da campeã. |
 | `ambiente.py` | Estado da partida, saltos, obstáculos e colisões. |
-| `politica.py` | Converter a distância e os parâmetros em um pedido de salto. |
+| `politica.py` | Converter distância, altura e parâmetros em um pedido de salto. |
 | `treino.py` | Pontuar partidas, preservar a melhor configuração e gerar candidatas. |
 | `avaliacao.py` | Carregar a campeã e acompanhar uma partida com parâmetros fixos. |
 | `campeao.py` | Salvar e carregar a melhor configuração em JSON. |
 | `interface.py` | Desenhar o estado atual, sem modificá-lo. |
 
-O fluxo de cada passo é: observar a distância → a política pedir ou não um salto → o ambiente executar o passo → o treino verificar se a tentativa acabou → desenhar.
+O fluxo de cada passo é: observar distância e altura → a política pedir ou não um salto → o ambiente executar o passo → o treino verificar se a tentativa acabou → desenhar.
 
 O ambiente não conhece pesos nem mutações. A política não conhece a física. O treino muda os parâmetros somente entre partidas. Essa divisão permite estudar cada conceito e, depois, usar o mesmo ambiente com parâmetros fixos para avaliação.
 
@@ -60,10 +77,16 @@ O ambiente não conhece pesos nem mutações. A política não conhece a física
 
 - Passo fixo de 1/60 s e limite de 30 s por tentativa.
 - Treino sempre na sequência de obstáculos da semente 123.
-- Campeã salva em `campeao.json`, ao lado dos arquivos; empates preservam a anterior.
+- Campeã salva em `campeao_altura.json`, ao lado dos arquivos; empates preservam a anterior.
 - Ao reabrir, a primeira candidata usa os parâmetros salvos. O estado do gerador de mutações não é salvo, portanto a busca não continua exatamente de onde parou.
 - No treino, Espaço permite salto manual e R reposiciona o jogo. Tentativas com intervenção manual não entram no recorde. R mantém o tamanho e a sequência atuais dos obstáculos, como na versão anterior.
 
 A versão do experimento em `campeao.py` deve ser incrementada se mudar a física, a observação, a política ou a geração de obstáculos. O carregamento também verifica o limite e a semente para evitar comparar recordes de condições diferentes.
 
 A avaliação usa a semente 123 por padrão para reproduzir o desempenho da campeã; `--semente` permite observar o desempenho em outras sequências. Se resultados dessas sequências orientarem ajustes, elas passam a servir como validação; a avaliação final precisa de outras sequências reservadas.
+
+## Verificação
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```

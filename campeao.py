@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 # Incremente se mudar a física, observação, política ou geração de obstáculos.
-VERSAO_EXPERIMENTO = 1
+VERSAO_EXPERIMENTO = 2
 
 
 def carregar_campeao(caminho, limite, semente):
@@ -22,16 +22,18 @@ def carregar_campeao(caminho, limite, semente):
     }:
         raise ValueError("A campeã salva pertence a outro experimento.")
 
-    valores = [dados.get(chave) for chave in ("peso", "vies", "tempo_segundos")]
+    valores = [dados.get(chave) for chave in (
+        "peso_distancia", "peso_altura", "vies", "tempo_segundos",
+    )]
     if any(
         type(valor) not in (int, float) or not math.isfinite(valor)
         for valor in valores
     ):
         raise ValueError("A campeã salva contém parâmetros ou tempo inválidos.")
-    peso, vies, tempo = valores
+    peso_distancia, peso_altura, vies, tempo = valores
     if not 0 <= tempo <= limite:
         raise ValueError("O tempo salvo está fora do limite do experimento.")
-    return (peso, vies), tempo
+    return (peso_distancia, peso_altura, vies), tempo
 
 
 def salvar_campeao(caminho, parametros, tempo, limite, semente):
@@ -42,8 +44,9 @@ def salvar_campeao(caminho, parametros, tempo, limite, semente):
             "limite_segundos": limite,
             "semente_treino": semente,
         },
-        "peso": parametros[0],
-        "vies": parametros[1],
+        "peso_distancia": parametros[0],
+        "peso_altura": parametros[1],
+        "vies": parametros[2],
         "tempo_segundos": tempo,
     }
     # Substituir somente após escrever evita truncar o recorde anterior.

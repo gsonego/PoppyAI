@@ -44,7 +44,9 @@ def main(modo="treino", semente=None):
             if not executando:
                 break
             if modo == "treino" or not sessao.concluida:
-                pedir_salto = decidir_salto(ambiente.distancia, sessao.parametros)
+                pedir_salto = decidir_salto(
+                    ambiente.distancia, ambiente.obstaculo.height, sessao.parametros,
+                )
                 ambiente.avancar(pedir_salto)
                 if sessao.terminou(ambiente):
                     sessao.concluir_tentativa(ambiente)

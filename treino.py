@@ -26,18 +26,29 @@ class Treino:
             print(f"Campeã carregada: recorde de treino={self.melhor_tempo:.2f}s")
         else:
             print("Nenhuma campeã salva. Iniciando uma nova busca.")
-        peso, vies = self.parametros
-        print(f"Tentativa {self.tentativa}: peso: {peso:.3f}, viés: {vies:.3f}")
+        self._anunciar_tentativa()
+
+    def _anunciar_tentativa(self):
+        peso_distancia, peso_altura, vies = self.parametros
+        print(
+            f"Tentativa {self.tentativa}: peso_distancia={peso_distancia:.3f}, "
+            f"peso_altura={peso_altura:.3f}, vies={vies:.3f}"
+        )
 
     def _sortear_parametros(self):
-        return self.sorteio.uniform(-2.0, 2.0), self.sorteio.uniform(-1.0, 1.0)
+        return (
+            self.sorteio.uniform(-2.0, 2.0),
+            self.sorteio.uniform(-2.0, 2.0),
+            self.sorteio.uniform(-1.0, 1.0),
+        )
 
     def _proxima_candidata(self):
         if self.melhores_parametros is None or self.sorteio.random() < 0.20:
             return self._sortear_parametros()
-        peso, vies = self.melhores_parametros
+        peso_distancia, peso_altura, vies = self.melhores_parametros
         return (
-            peso + self.sorteio.gauss(0.0, 0.20),
+            peso_distancia + self.sorteio.gauss(0.0, 0.20),
+            peso_altura + self.sorteio.gauss(0.0, 0.20),
             vies + self.sorteio.gauss(0.0, 0.10),
         )
 
@@ -67,5 +78,4 @@ class Treino:
         )
         self.parametros = self._proxima_candidata()
         self.tentativa += 1
-        peso, vies = self.parametros
-        print(f"Tentativa {self.tentativa}: peso={peso:.3f}, vies={vies:.3f}")
+        self._anunciar_tentativa()

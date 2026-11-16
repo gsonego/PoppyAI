@@ -2,20 +2,22 @@
 
 import math
 
-from config import LARGURA
+from config import ALTURA, LARGURA
 
 
-def limiar_salto(parametros):
-    """Distância em que z = 0; peso zero não tem um limiar de distância."""
-    peso, vies = parametros
-    if peso == 0:
+def limiar_salto(altura, parametros):
+    """Distância em que z = 0, considerando a altura do obstáculo atual."""
+    peso_distancia, peso_altura, vies = parametros
+    if peso_distancia == 0:
         return None
-    limiar = -(vies / peso) * LARGURA
+    termo_altura = peso_altura * (altura / ALTURA)
+    limiar = -((termo_altura + vies) / peso_distancia) * LARGURA
     return limiar if math.isfinite(limiar) else None
 
 
-def decidir_salto(distancia, parametros):
-    peso, vies = parametros
-    entrada = distancia / LARGURA
-    z = peso * entrada + vies
+def decidir_salto(distancia, altura, parametros):
+    peso_distancia, peso_altura, vies = parametros
+    entrada_distancia = distancia / LARGURA
+    entrada_altura = altura / ALTURA
+    z = peso_distancia * entrada_distancia + peso_altura * entrada_altura + vies
     return z > 0

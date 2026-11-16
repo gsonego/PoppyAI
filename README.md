@@ -4,11 +4,31 @@ Experimento de aprendizado com dois nós de entrada (distância e altura do
 obstáculo), um neurônio de saída e busca evolutiva, sem bibliotecas de machine
 learning. A função de ativação é o degrau: pede salto quando `z > 0`.
 
-No PowerShell:
+No PowerShell, abra a tela inicial:
 
 ```powershell
 .\.venv\Scripts\python.exe main.py
 ```
+
+Escolha com as setas e Enter, ou clique em uma opção:
+
+- **Jogar:** você controla os saltos da Poppy; mostra tempo e recorde pessoal.
+- **Treinar IA:** a IA busca parâmetros; mostra tempo, recorde da IA e tentativa.
+- **Ver a IA jogar:** usa a campeã salva com parâmetros fixos.
+
+O visual usa a Poppy aprovada em pixel art, cenário claro e fonte bitmap incluída
+no projeto. O cenário e os sprites são carregados uma vez; a física continua igual.
+Orelhas e cauda são partes decorativas da arte; `Tab` também mostra o retângulo
+de colisão nos modos da IA.
+
+Durante a partida: `Espaço` salta (humano e treino), `R` reinicia, `Esc` volta
+ao menu e `Tab` abre ou fecha os detalhes da IA (treino e avaliação).
+No modo humano, a colisão mantém o resultado na tela; `R` repete a partida.
+Seu recorde é salvo em `recorde_humano.json` ao morrer, reiniciar, voltar ao menu
+ou fechar a janela. Ele é separado dos pesos e do recorde da IA.
+
+Para entrar diretamente, use `--modo humano`, `--modo treino` ou
+`--modo avaliacao`.
 
 Para observar a campeã salva, com os dois pesos e o viés fixos:
 
@@ -16,7 +36,7 @@ Para observar a campeã salva, com os dois pesos e o viés fixos:
 .\.venv\Scripts\python.exe main.py --modo avaliacao
 ```
 
-O modo padrão continua sendo treino (também pode usar `--modo treino`).
+Sem `--modo`, o programa abre o menu.
 Na avaliação, a partida continua até a colisão, sem limite de tempo, e mantém
 o resultado na tela. R repete a mesma sequência desde o início; o salto
 manual fica desativado. Esse modo não gera mutações nem grava em `campeao_altura.json`.
@@ -29,18 +49,18 @@ Para avaliar em outra sequência de obstáculos:
 ```
 
 A mesma semente repete a mesma sequência; sementes diferentes geram outras
-sequências. O primeiro obstáculo continua igual. A semente aparece na tela e
+sequências. O primeiro obstáculo continua igual. A semente aparece nos detalhes da IA e
 no terminal, e R reinicia com a semente escolhida. Sem `--semente`, a avaliação
 usa 123. Essa opção é exclusiva da avaliação; o treino continua usando 123.
 
-Nos dois modos, a tela mostra os dois pesos, o viés, a distância, a altura e o
-pedido atual da política. As entradas são normalizadas pelas dimensões da janela:
+Nos modos da IA, pressione `Tab` para mostrar os dois pesos, o viés, a distância,
+a altura e o pedido atual da política. As entradas são normalizadas pelas dimensões da janela:
 
 ```python
 z = peso_distancia * (distancia / LARGURA) + peso_altura * (altura / ALTURA) + vies
 ```
 
-A marca laranja no chão indica a distância em que a decisão muda, para a altura
+A marca rosa nos detalhes indica a distância em que a decisão muda, para a altura
 do obstáculo atual:
 `limite = -(peso_altura * (altura / ALTURA) + vies) / peso_distancia * LARGURA`.
 Com peso da distância negativo, pede salto abaixo do limite; com positivo,
@@ -60,14 +80,17 @@ não garante melhora do desempenho.
 
 | Arquivo | Responsabilidade |
 | --- | --- |
-| `main.py` | Inicializar o Pygame e coordenar teclado, simulação, treino e desenho. |
+| `main.py` | Inicializar o Pygame e coordenar menu, controles e os três modos. |
 | `config.py` | Dimensões, física, passo fixo, sementes, limite e caminho da campeã. |
 | `ambiente.py` | Estado da partida, saltos, obstáculos e colisões. |
 | `politica.py` | Converter distância, altura e parâmetros em um pedido de salto. |
 | `treino.py` | Pontuar partidas, preservar a melhor configuração e gerar candidatas. |
 | `avaliacao.py` | Carregar a campeã e acompanhar uma partida com parâmetros fixos. |
+| `humano.py` | Acompanhar a partida humana e salvar o recorde pessoal separado. |
 | `campeao.py` | Salvar e carregar a melhor configuração em JSON. |
-| `interface.py` | Desenhar o estado atual, sem modificá-lo. |
+| `interface.py` | Desenhar menu, partida e painel opcional, sem alterar a simulação. |
+| `art/cenario.py` | Desenhar o cenário estático em pixel art. |
+| `art/fonte_pixel.py` | Renderizar a fonte bitmap sem fontes externas. |
 
 O fluxo de cada passo é: observar distância e altura → a política pedir ou não um salto → o ambiente executar o passo → o treino verificar se a tentativa acabou → desenhar.
 
@@ -76,7 +99,7 @@ O ambiente não conhece pesos nem mutações. A política não conhece a física
 ## Experimento atual
 
 - Passo fixo de 1/60 s e tentativas sem limite de tempo: terminam na colisão.
-- No treino, os parâmetros mudam após a colisão. Novos recordes são salvos durante a partida, a cada avanço de aproximadamente um segundo sobre o recorde salvo, e também na colisão ou ao fechar a janela. Tentativas com intervenção manual não substituem a campeã. Se uma candidata sobreviver indefinidamente, a mesma tentativa continuará rodando e sendo salva enquanto melhora o recorde.
+- No treino, os parâmetros mudam após a colisão. Novos recordes são salvos durante a partida, a cada avanço de aproximadamente um segundo sobre o recorde salvo, e também na colisão, antes de reiniciar, ao voltar ao menu ou ao fechar a janela. Tentativas com intervenção manual não substituem a campeã. Se uma candidata sobreviver indefinidamente, a mesma tentativa continuará rodando e sendo salva enquanto melhora o recorde.
 - Treino sempre na sequência de obstáculos da semente 123.
 - Campeã salva em `campeao_altura.json`, ao lado dos arquivos; empates preservam a anterior.
 - Durante o jogo, as gravações ocorrem em uma thread separada para não bloquear os quadros. Se o disco estiver ocupado, a fila mantém apenas o pedido mais recente. Ao fechar a janela, o programa espera a última gravação terminar. Erros de gravação são informados.

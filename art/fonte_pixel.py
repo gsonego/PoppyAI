@@ -1,4 +1,4 @@
-"""Fonte bitmap 5×7 para a prévia; não depende de fontes do sistema."""
+"""Fonte bitmap 5×7 do jogo; não depende de fontes do sistema."""
 
 from functools import lru_cache
 import unicodedata

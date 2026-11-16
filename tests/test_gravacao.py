@@ -51,7 +51,7 @@ class TestGravacao(unittest.TestCase):
                         patch("main.pygame.time.Clock"), \
                         patch("main.pygame.event.get", side_effect=eventos), \
                         patch("main.desenhar"):
-                    main.main()
+                    main.main("treino")
             finally:
                 liberar.set()
             _, tempo = carregar_campeao(caminho, None, SEMENTE_TREINO)

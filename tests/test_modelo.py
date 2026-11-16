@@ -136,7 +136,7 @@ class TestCiclo(unittest.TestCase):
                     patch("main.pygame.time.Clock"), \
                     patch("main.pygame.event.get", side_effect=eventos), \
                     patch("main.desenhar"):
-                main.main()
+                main.main("treino")
             self.assertEqual(treino.tentativa, 1)
             reaberto = Treino(self.caminho)
             self.assertEqual(reaberto.parametros, parametros)

@@ -53,10 +53,10 @@ class Treino:
         )
 
     def terminou(self, ambiente):
-        return ambiente.fim_de_jogo or ambiente.tempo_vivo >= LIMITE_TENTATIVA
+        return ambiente.fim_de_jogo
 
     def concluir_tentativa(self, ambiente):
-        pontuacao = min(ambiente.tempo_vivo, LIMITE_TENTATIVA)
+        pontuacao = ambiente.tempo_vivo
         melhorou = not ambiente.tentativa_manual and pontuacao > self.melhor_tempo
         if melhorou:
             self.melhor_tempo = pontuacao
@@ -69,10 +69,9 @@ class Treino:
             except (OSError, ValueError) as erro:
                 raise SystemExit(f"Não foi possível salvar a campeã: {erro}")
 
-        motivo = "colisao" if ambiente.fim_de_jogo else "limite atingido"
         print(
             f"Tentativa {self.tentativa}: {pontuacao:.2f}s "
-            f"({motivo}) | recorde={self.melhor_tempo:.2f}s"
+            f"(colisão) | recorde={self.melhor_tempo:.2f}s"
             + (" | NOVO RECORDE" if melhorou else "")
             + (" | intervenção manual: fora do recorde" if ambiente.tentativa_manual else "")
         )

@@ -17,7 +17,7 @@ Para observar a campeã salva, com os dois pesos e o viés fixos:
 ```
 
 O modo padrão continua sendo treino (também pode usar `--modo treino`).
-Na avaliação, a partida para na colisão ou no limite de 30 segundos e mantém
+Na avaliação, a partida continua até a colisão, sem limite de tempo, e mantém
 o resultado na tela. R repete a mesma sequência desde o início; o salto
 manual fica desativado. Esse modo não gera mutações nem grava em `campeao_altura.json`.
 Se não houver campeã salva, o programa informa que é preciso treinar primeiro.
@@ -75,13 +75,14 @@ O ambiente não conhece pesos nem mutações. A política não conhece a física
 
 ## Experimento atual
 
-- Passo fixo de 1/60 s e limite de 30 s por tentativa.
+- Passo fixo de 1/60 s e tentativas sem limite de tempo: terminam na colisão.
+- No treino, os parâmetros mudam e a campeã é salva após a colisão. Se uma candidata sobreviver indefinidamente, a mesma tentativa continuará rodando. Fechar a janela não conclui nem salva a tentativa atual.
 - Treino sempre na sequência de obstáculos da semente 123.
 - Campeã salva em `campeao_altura.json`, ao lado dos arquivos; empates preservam a anterior.
 - Ao reabrir, a primeira candidata usa os parâmetros salvos. O estado do gerador de mutações não é salvo, portanto a busca não continua exatamente de onde parou.
 - No treino, Espaço permite salto manual e R reposiciona o jogo. Tentativas com intervenção manual não entram no recorde. R mantém o tamanho e a sequência atuais dos obstáculos, como na versão anterior.
 
-A versão do experimento em `campeao.py` deve ser incrementada se mudar a física, a observação, a política ou a geração de obstáculos. O carregamento também verifica o limite e a semente para evitar comparar recordes de condições diferentes.
+A versão do experimento em `campeao.py` deve ser incrementada se mudar a física, a observação, a política ou a geração de obstáculos. O carregamento também verifica o limite e a semente. O limite atual é `null` no JSON (sem teto). Campeãs da versão 2 com o antigo limite de 30 segundos continuam válidas: seus tempos são os já alcançados, e um recorde de 30 segundos não significa que houve colisão nesse instante. As próximas gravações usam o formato sem teto.
 
 A avaliação usa a semente 123 por padrão para reproduzir o desempenho da campeã; `--semente` permite observar o desempenho em outras sequências. Se resultados dessas sequências orientarem ajustes, elas passam a servir como validação; a avaliação final precisa de outras sequências reservadas.
 

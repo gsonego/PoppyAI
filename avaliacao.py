@@ -21,13 +21,12 @@ class Avaliacao:
         )
 
     def terminou(self, ambiente):
-        return ambiente.fim_de_jogo or ambiente.tempo_vivo >= LIMITE_TENTATIVA
+        return ambiente.fim_de_jogo
 
     def concluir_tentativa(self, ambiente):
         self.concluida = True
-        tempo = min(ambiente.tempo_vivo, LIMITE_TENTATIVA)
-        motivo = "colisão" if ambiente.fim_de_jogo else "limite atingido"
+        tempo = ambiente.tempo_vivo
         print(
             f"Avaliação: semente={self.semente} | {tempo:.2f}s "
-            f"({motivo}). R para repetir."
+            f"(colisão). R para repetir."
         )

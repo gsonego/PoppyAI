@@ -5,6 +5,7 @@ import io
 import json
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
 
 from ambiente import Ambiente
@@ -57,6 +58,50 @@ class TestCiclo(unittest.TestCase):
         self.caminho.write_text(json.dumps(dados), encoding="utf-8")
         with self.assertRaises(ValueError):
             carregar_campeao(self.caminho, LIMITE_TENTATIVA, SEMENTE_TREINO)
+
+    def test_so_termina_na_colisao_e_salva_tempo_acima_de_30(self):
+        with contextlib.redirect_stdout(io.StringIO()):
+            treino = Treino(self.caminho)
+            parametros = treino.parametros
+            salvar_campeao(self.caminho, parametros, 120.5, None, SEMENTE_TREINO)
+            avaliacao = Avaliacao(self.caminho)
+            self.assertEqual(avaliacao.recorde_treino, 120.5)
+            ambiente = SimpleNamespace(fim_de_jogo=False, tempo_vivo=120.5,
+                                       tentativa_manual=False)
+            for tempo in (30.0, 30.1, 120.5, 10000.0):
+                ambiente.tempo_vivo = tempo
+                self.assertFalse(treino.terminou(ambiente))
+                self.assertFalse(avaliacao.terminou(ambiente))
+            ambiente.tempo_vivo = 120.5
+            ambiente.fim_de_jogo = True
+            self.assertTrue(treino.terminou(ambiente))
+            self.assertTrue(avaliacao.terminou(ambiente))
+            treino.concluir_tentativa(ambiente)
+            avaliacao.concluir_tentativa(ambiente)
+            self.assertEqual(treino.melhor_tempo, 120.5)
+            self.assertEqual(
+                carregar_campeao(self.caminho, None, SEMENTE_TREINO),
+                (parametros, 120.5),
+            )
+            dados = json.loads(self.caminho.read_text(encoding="utf-8"))
+            self.assertIsNone(dados["experimento"]["limite_segundos"])
+
+    def test_preserva_campea_do_antigo_limite_de_30_segundos(self):
+        parametros = (-1.5, 0.1, 0.5)
+        salvar_campeao(self.caminho, parametros, 30.0, 30.0, SEMENTE_TREINO)
+        original = self.caminho.read_bytes()
+        self.assertEqual(
+            carregar_campeao(self.caminho, None, SEMENTE_TREINO),
+            (parametros, 30.0),
+        )
+        self.assertEqual(self.caminho.read_bytes(), original)
+        with self.assertRaises(ValueError):
+            carregar_campeao(self.caminho, None, SEMENTE_TREINO + 1)
+
+    def test_rejeita_tempo_negativo_sem_teto(self):
+        salvar_campeao(self.caminho, (-1.5, 0.1, 0.5), -1, None, SEMENTE_TREINO)
+        with self.assertRaises(ValueError):
+            carregar_campeao(self.caminho, None, SEMENTE_TREINO)
 
     def test_rejeita_modelo_antigo(self):
         dados = {

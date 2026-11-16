@@ -15,11 +15,18 @@ def carregar_campeao(caminho, limite, semente):
         return None
 
     dados = json.loads(caminho.read_text(encoding="utf-8"))
-    if not isinstance(dados, dict) or dados.get("experimento") != {
+    experimento_atual = {
         "versao": VERSAO_EXPERIMENTO,
         "limite_segundos": limite,
         "semente_treino": semente,
-    }:
+    }
+    # A política e a física são iguais: preserva os tempos já alcançados
+    # pelas campeãs anteriores, mesmo que tenham parado no antigo teto de 30 s.
+    experimento_anterior = {**experimento_atual, "limite_segundos": 30.0}
+    if not isinstance(dados, dict) or not (
+        dados.get("experimento") == experimento_atual
+        or (limite is None and dados.get("experimento") == experimento_anterior)
+    ):
         raise ValueError("A campeã salva pertence a outro experimento.")
 
     valores = [dados.get(chave) for chave in (
@@ -31,7 +38,8 @@ def carregar_campeao(caminho, limite, semente):
     ):
         raise ValueError("A campeã salva contém parâmetros ou tempo inválidos.")
     peso_distancia, peso_altura, vies, tempo = valores
-    if not 0 <= tempo <= limite:
+    limite_salvo = dados["experimento"]["limite_segundos"]
+    if tempo < 0 or (limite_salvo is not None and tempo > limite_salvo):
         raise ValueError("O tempo salvo está fora do limite do experimento.")
     return (peso_distancia, peso_altura, vies), tempo
 

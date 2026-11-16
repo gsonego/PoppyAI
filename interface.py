@@ -102,8 +102,7 @@ def desenhar(tela, fonte, ambiente, sessao, modo="treino"):
 
     if modo == "avaliacao":
         if sessao.concluida:
-            resultado = "Colisão" if ambiente.fim_de_jogo else "Limite atingido"
-            aviso = f"{resultado}! R: repetir avaliação."
+            aviso = "Colisão! R: repetir avaliação."
         else:
             aviso = "Campeã fixa | R: reiniciar | Salto manual desativado"
         mensagem = fonte.render(aviso, True, (40, 40, 40))

@@ -13,7 +13,7 @@ No PowerShell, abra a tela inicial:
 Escolha com as setas e Enter, ou clique em uma opção:
 
 - **Jogar:** você controla os saltos da Poppy; mostra tempo e recorde pessoal.
-- **Treinar IA:** a IA busca parâmetros; mostra tempo, recorde da IA e tentativa.
+- **Treinar IA:** 50 Poppys treinam juntas; mostra geração, sobreviventes, tempo e recorde da IA.
 - **Ver a IA jogar:** usa a campeã salva com parâmetros fixos.
 
 O visual usa a Poppy aprovada em pixel art, cenário claro e fonte bitmap incluída
@@ -31,16 +31,16 @@ horizontal de -5 pixels em relação ao centro da área de colisão.
 
 A corrida usa quatro poses alinhadas, alternadas a cada 32 pixels percorridos
 pelo mundo. Ela acompanha o deslocamento da partida, sem depender do relógio real.
-No salto, as patas ficam recolhidas; na colisão, a corrida para e a Poppy fica
-vermelha. No menu ela permanece parada. Quadros e tamanhos são carregados e
+No salto, as patas ficam recolhidas; na colisão, a corrida para. No humano e na
+avaliação, a Poppy fica vermelha; no treino coletivo, ela desaparece. No menu
+ela permanece parada. Quadros e tamanhos são carregados e
 guardados em memória, sem leitura de imagem a cada quadro. A animação por si só não altera a física nem a política.
 
-Durante a partida: `Espaço` salta (humano e treino), `R` reinicia, `Esc` volta
+Durante a partida: `Espaço` salta no humano, `R` reinicia no humano e na avaliação, `Esc` volta
 ao menu e `Tab` abre ou fecha os detalhes da IA (treino e avaliação).
 No modo humano, a colisão mantém o resultado na tela; `R` repete a partida.
-A Poppy fica vermelha ao colidir. No humano e na avaliação, ela permanece assim
-até reiniciar; no treino, a colisão fica visível por 0,45 segundo antes da próxima
-tentativa. Essa pausa não conta no tempo sobrevivido e não bloqueia os controles.
+A Poppy fica vermelha ao colidir no humano e na avaliação e permanece assim
+até reiniciar. No treino, cada Poppy que colide é removida junto com sua linha.
 Seu recorde é salvo em `recorde_humano_colisao.json` ao morrer, reiniciar, voltar ao menu
 ou fechar a janela. Ele é separado dos pesos e do recorde da IA.
 
@@ -117,8 +117,31 @@ sendo uma caixa simples de 30 × 50. Nos seguintes sorteios, a distribuição é
 A velocidade e a força do salto continuam iguais. As dimensões máximas dos
 pares foram verificadas com a física atual para que exista um momento de salto
 capaz de ultrapassá-los. A colisão e o sensor usam o retângulo total, preenchido
-pelas duas caixas. No treino, R preserva o tipo atual; no humano e na avaliação,
-R recomeça a sequência pela caixa simples inicial.
+pelas duas caixas. No humano e na avaliação, R recomeça a sequência pela caixa
+simples inicial; cada geração do treino também começa nessa mesma sequência.
+
+## Treino visual por gerações
+
+São 50 Poppys com pesos próprios, simuladas no mesmo passo fixo e na mesma
+sequência de obstáculos. Cada uma tem uma cor fixa para a linha até a frente
+do obstáculo; as Poppys mantêm a pelagem original. As linhas aparecem sempre
+no treino. As demais Poppys são desenhadas com transparência e uma representante
+com melhor tempo fica destacada. Sobreviventes empatadas são equivalentes pelo
+critério de pontuação atual; o destaque não prevê qual sobreviverá mais.
+
+Quando todas morrem, a próxima geração começa automaticamente. As cinco melhores
+são preservadas (incluindo a campeã histórica); as outras 45 vêm de mutações
+dos melhores pais, com 20% de chance por vaga de sortear pesos novos. Uma campeã
+já salva entra na primeira geração. Os pesos não mudam durante a partida de
+uma Poppy. O arquivo e o formato da campeã continuam compatíveis com a avaliação.
+
+`N` salva a melhor pontuação alcançada e avança a geração, mesmo com Poppys vivas.
+Não há limite de duração; use essa tecla se alguma continuar sobrevivendo.
+`Tab` abre os pesos e a marca de salto da representante; `Esc` volta ao menu
+salvando o melhor progresso. `Espaço` e `R` ficam desativados no treino coletivo.
+Poppys que fazem os mesmos movimentos podem se sobrepor, embora sejam simuladas
+e pontuadas separadamente. O estado completo da população e o número da geração
+não são persistidos: ao reabrir, começa uma geração nova com a campeã salva.
 
 ## Organização
 
@@ -129,6 +152,7 @@ R recomeça a sequência pela caixa simples inicial.
 | `ambiente.py` | Estado da partida, saltos, obstáculos e colisões. |
 | `politica.py` | Converter distância, altura, largura e parâmetros em um pedido de salto. |
 | `treino.py` | Pontuar partidas, preservar a melhor configuração e gerar candidatas. |
+| `geracoes.py` | Simular 50 candidatas, eliminar colisões e selecionar a próxima geração. |
 | `avaliacao.py` | Carregar a campeã e acompanhar uma partida com parâmetros fixos. |
 | `humano.py` | Acompanhar a partida humana e salvar o recorde pessoal separado. |
 | `campeao.py` | Salvar e carregar a melhor configuração em JSON. |
@@ -144,12 +168,12 @@ O ambiente não conhece pesos nem mutações. A política não conhece a física
 ## Experimento atual
 
 - Passo fixo de 1/60 s e tentativas sem limite de tempo: terminam na colisão.
-- No treino, os parâmetros mudam após a colisão. Novos recordes são salvos durante a partida, a cada avanço de aproximadamente um segundo sobre o recorde salvo, e também na colisão, antes de reiniciar, ao voltar ao menu ou ao fechar a janela. Tentativas com intervenção manual não substituem a campeã. Se uma candidata sobreviver indefinidamente, a mesma tentativa continuará rodando e sendo salva enquanto melhora o recorde.
+- No treino coletivo, os parâmetros mudam entre gerações. Novos recordes são salvos durante a partida, a cada avanço de aproximadamente um segundo sobre o recorde salvo, e também ao encerrar uma geração, voltar ao menu ou fechar a janela.
 - Treino sempre na sequência de obstáculos da semente 123.
 - Campeã salva em `campeao_colisao.json`, ao lado dos arquivos; empates preservam a anterior.
 - Durante o jogo, as gravações ocorrem em uma thread separada para não bloquear os quadros. Se o disco estiver ocupado, a fila mantém apenas o pedido mais recente. Ao fechar a janela, o programa espera a última gravação terminar. Erros de gravação são informados.
 - Ao reabrir, a primeira candidata usa os parâmetros salvos. O estado do gerador de mutações não é salvo, portanto a busca não continua exatamente de onde parou.
-- No treino, Espaço permite salto manual e R reposiciona o jogo. Tentativas com intervenção manual não entram no recorde. R mantém o tamanho e a sequência atuais dos obstáculos, como na versão anterior.
+- No treino, N avança para a próxima geração; não há intervenção manual nos saltos.
 
 A versão do experimento em `campeao.py` deve ser incrementada se mudar a física, a observação, a política ou a geração de obstáculos. O carregamento também verifica o limite e a semente. O limite atual é `null` no JSON (sem teto). Recordes de versões anteriores não são comparados com os do desafio atual.
 

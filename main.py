@@ -7,12 +7,12 @@ import pygame
 from ambiente import Ambiente
 from avaliacao import Avaliacao
 from campeao import GravadorCampeao
-from config import FPS, PAUSA_COLISAO_MS, SEMENTE_TREINO
+from config import FPS, SEMENTE_TREINO
 from humano import JogoHumano
-from interface import OPCOES_MENU, RecursosInterface, botoes_menu, desenhar, desenhar_menu
+from interface import OPCOES_MENU, RecursosInterface, botoes_menu, desenhar, desenhar_menu, desenhar_populacao
 from janela import criar_janela, posicao_logica, tratar_redimensionamento
 from politica import decidir_salto
-from treino import Treino
+from geracoes import TreinoGeracoes
 
 
 def escolher_modo(tela, recursos, relogio, aviso=""):
@@ -42,26 +42,16 @@ def escolher_modo(tela, recursos, relogio, aviso=""):
         desenhar_menu(tela, recursos, selecionado, aviso)
 
 
-def jogar(tela, recursos, relogio, modo, semente):
-    """Retorna True para fechar a janela, False para voltar ao menu."""
-    gravador = GravadorCampeao() if modo == "treino" else None
-    sessao = None
-    ambiente = None
+def jogar_populacao(tela, recursos, relogio):
+    gravador = GravadorCampeao()
+    treino = None
     try:
-        if modo == "treino":
-            sessao = Treino(salvar=gravador.agendar)
-        elif modo == "humano":
-            sessao = JogoHumano()
-        else:
-            sessao = Avaliacao(semente=semente)
-        ambiente = Ambiente(semente)
-        pygame.display.set_caption(f"PoppyAI — {modo}")
+        treino = TreinoGeracoes(salvar=gravador.agendar)
+        pygame.display.set_caption("PoppyAI — treino de 50 Poppys")
         detalhes = False
-        reiniciar_em = None
         while True:
             relogio.tick(FPS)
-            if gravador is not None:
-                gravador.verificar_erro()
+            gravador.verificar_erro()
             for evento in pygame.event.get():
                 tratar_redimensionamento(evento)
                 if evento.type == pygame.QUIT:
@@ -69,53 +59,63 @@ def jogar(tela, recursos, relogio, modo, semente):
                 if evento.type == pygame.KEYDOWN:
                     if evento.key == pygame.K_ESCAPE:
                         return False
-                    if evento.key == pygame.K_TAB and modo != "humano":
+                    if evento.key == pygame.K_TAB:
+                        detalhes = not detalhes
+                    if evento.key == pygame.K_n:
+                        treino.proxima_geracao()
+            treino.avancar()
+            desenhar_populacao(tela, recursos, treino, detalhes)
+    finally:
+        try:
+            if treino is not None:
+                treino.salvar_melhor(forcar=True)
+        finally:
+            gravador.fechar()
+
+
+def jogar(tela, recursos, relogio, modo, semente):
+    """Retorna True para fechar a janela, False para voltar ao menu."""
+    if modo == "treino":
+        return jogar_populacao(tela, recursos, relogio)
+    sessao = None
+    ambiente = None
+    try:
+        sessao = JogoHumano() if modo == "humano" else Avaliacao(semente=semente)
+        ambiente = Ambiente(semente)
+        pygame.display.set_caption(f"PoppyAI — {modo}")
+        detalhes = False
+        while True:
+            relogio.tick(FPS)
+            for evento in pygame.event.get():
+                tratar_redimensionamento(evento)
+                if evento.type == pygame.QUIT:
+                    return True
+                if evento.type == pygame.KEYDOWN:
+                    if evento.key == pygame.K_ESCAPE:
+                        return False
+                    if evento.key == pygame.K_TAB and modo == "avaliacao":
                         detalhes = not detalhes
                     if evento.key == pygame.K_r:
-                        reiniciar_em = None
-                        if modo == "treino":
-                            sessao.registrar_progresso(ambiente, forcar=True)
-                            ambiente.reiniciar_manualmente()
-                        else:
-                            if modo == "humano":
-                                sessao.salvar_recorde(ambiente)
-                            ambiente.reiniciar(semente)
-                            sessao.concluida = False
-                    if evento.key == pygame.K_SPACE and modo in ("treino", "humano"):
+                        if modo == "humano":
+                            sessao.salvar_recorde(ambiente)
+                        ambiente.reiniciar(semente)
+                        sessao.concluida = False
+                    if evento.key == pygame.K_SPACE and modo == "humano":
                         ambiente.pular_manualmente()
-
-            if modo == "treino" and ambiente.fim_de_jogo:
-                if pygame.time.get_ticks() >= reiniciar_em:
-                    sessao.concluir_tentativa(ambiente)
-                    ambiente.reiniciar(SEMENTE_TREINO)
-                    reiniciar_em = None
-            elif modo == "treino" or not sessao.concluida:
+            if not sessao.concluida:
                 pedir_salto = False
-                if modo != "humano":
+                if modo == "avaliacao":
                     pedir_salto = decidir_salto(
                         ambiente.distancia, ambiente.obstaculo.height,
                         ambiente.obstaculo.width, sessao.parametros,
                     )
                 ambiente.avancar(pedir_salto)
                 if sessao.terminou(ambiente):
-                    if modo == "treino":
-                        sessao.registrar_progresso(ambiente, forcar=True)
-                        reiniciar_em = pygame.time.get_ticks() + PAUSA_COLISAO_MS
-                    else:
-                        sessao.concluir_tentativa(ambiente)
-                elif modo == "treino":
-                    sessao.registrar_progresso(ambiente)
+                    sessao.concluir_tentativa(ambiente)
             desenhar(tela, recursos, ambiente, sessao, modo, detalhes)
     finally:
-        try:
-            if sessao is not None and ambiente is not None:
-                if modo == "treino":
-                    sessao.registrar_progresso(ambiente, forcar=True)
-                elif modo == "humano":
-                    sessao.salvar_recorde(ambiente)
-        finally:
-            if gravador is not None:
-                gravador.fechar()
+        if modo == "humano" and sessao is not None and ambiente is not None:
+            sessao.salvar_recorde(ambiente)
 
 
 def main(modo=None, semente=None):

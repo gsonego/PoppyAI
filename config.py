@@ -14,7 +14,6 @@ VELOCIDADE_SALTO = -650
 VELOCIDADE_OBSTACULO = 350
 FPS = 60
 PASSO = 1.0 / FPS
-PAUSA_COLISAO_MS = 450  # Tempo visual antes da próxima tentativa no treino.
 SEMENTE_PARAMETROS = 42
 SEMENTE_TREINO = 123
 LIMITE_TENTATIVA = None  # Sem limite de tempo: a tentativa termina na colisão.

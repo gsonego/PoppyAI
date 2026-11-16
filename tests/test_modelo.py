@@ -19,6 +19,7 @@ from campeao import carregar_campeao, salvar_campeao
 from config import ALTURA, LARGURA, LIMITE_TENTATIVA, SEMENTE_TREINO
 from politica import decidir_salto, limiar_salto
 from treino import Treino
+from geracoes import TreinoGeracoes
 
 
 class TestPolitica(unittest.TestCase):
@@ -155,17 +156,17 @@ class TestCiclo(unittest.TestCase):
 
     def test_fechar_janela_salva_candidata_viva_e_reabertura_carrega(self):
         with contextlib.redirect_stdout(io.StringIO()):
-            treino = Treino(self.caminho)
+            treino = TreinoGeracoes(self.caminho)
             parametros = treino.parametros
             # Fecha antes do primeiro salvamento periódico (menos de 1 s).
             eventos = [[] for _ in range(30)] + [[pygame.event.Event(pygame.QUIT)]]
             with patch.dict(os.environ, {"SDL_VIDEODRIVER": "dummy", "SDL_AUDIODRIVER": "dummy"}), \
-                    patch("main.Treino", return_value=treino), \
+                    patch("main.TreinoGeracoes", return_value=treino), \
                     patch("main.pygame.time.Clock"), \
                     patch("main.pygame.event.get", side_effect=eventos), \
-                    patch("main.desenhar"):
+                    patch("main.desenhar_populacao"):
                 main.main("treino")
-            self.assertEqual(treino.tentativa, 1)
+            self.assertEqual(treino.geracao, 1)
             reaberto = Treino(self.caminho)
             self.assertEqual(reaberto.parametros, parametros)
             self.assertAlmostEqual(reaberto.melhor_tempo, 0.5)

@@ -15,7 +15,6 @@ import main
 from ambiente import Ambiente
 from humano import JogoHumano
 from interface import RecursosInterface, desenhar, desenhar_menu, formatar_tempo
-from treino import Treino
 from janela import apresentar, area_conteudo, criar_janela, posicao_logica, tratar_redimensionamento
 
 
@@ -54,7 +53,7 @@ class TestJogo(unittest.TestCase):
 
         with patch("main.JogoHumano", return_value=sessao), \
                 patch("main.decidir_salto", side_effect=AssertionError("IA chamada no modo humano")), \
-                patch("main.Treino", side_effect=AssertionError("Treino criado no modo humano")), \
+                patch("main.TreinoGeracoes", side_effect=AssertionError("Treino criado no modo humano")), \
                 patch("main.pygame.time.Clock"), \
                 patch("main.pygame.event.get", side_effect=eventos), \
                 patch("main.desenhar", side_effect=observar):
@@ -173,27 +172,6 @@ class TestJogo(unittest.TestCase):
         self.assertEqual(recursos.sprite(76).get_size(), recursos.sprite(76, True).get_size())
         self.assertIsNot(recursos.sprite(76), recursos.sprite(76, True))
 
-    def test_treino_exibe_colisao_sem_avancar_tempo_antes_de_reiniciar(self):
-        class AmbienteComColisao(Ambiente):
-            def avancar(self, pedir_salto):
-                self.tempo_vivo = 2.0
-                self.fim_de_jogo = True
-
-        estados = []
-        eventos = [[] for _ in range(5)] + [[pygame.event.Event(pygame.QUIT)]]
-        with contextlib.redirect_stdout(io.StringIO()):
-            treino = Treino(Path(self.pasta.name) / "campeao.json")
-            with patch("main.Treino", return_value=treino), \
-                    patch("main.Ambiente", AmbienteComColisao), \
-                    patch("main.pygame.time.Clock"), \
-                    patch("main.pygame.time.get_ticks", side_effect=[1000, 1100, 1300, 1449, 1450]), \
-                    patch("main.pygame.event.get", side_effect=eventos), \
-                    patch("main.desenhar", side_effect=lambda tela, recursos, ambiente, sessao, *args:
-                          estados.append((ambiente.fim_de_jogo, ambiente.tempo_vivo, sessao.tentativa))):
-                main.main("treino")
-        self.assertEqual(estados[:4], [(True, 2.0, 1)] * 4)
-        self.assertEqual(estados[4], (False, 0.0, 2))
-        self.assertEqual(treino.melhor_tempo, 2.0)
 
 
 if __name__ == "__main__":

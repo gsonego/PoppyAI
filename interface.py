@@ -50,6 +50,14 @@ class RecursosInterface:
     def texto(self, tela, conteudo, x, y, cor=TINTA, escala=2):
         tela.blit(self.fonte.render(conteudo, tuple(pygame.Color(cor)), escala), (x, y))
 
+    def transparente(self, sprite):
+        chave = ("transparente", id(sprite))
+        if chave not in self._sprites:
+            copia = sprite.copy()
+            copia.set_alpha(110)
+            self._sprites[chave] = copia
+        return self._sprites[chave]
+
 
 def formatar_tempo(segundos):
     total = max(0, int(segundos))
@@ -87,7 +95,7 @@ def desenhar_caixa(tela, retangulo):
     pygame.draw.line(tela, "#744D3B", (x + 7, y + altura - 8), (x + largura - 8, y + 12), 4)
 
 
-def desenhar_decisao(tela, recursos, ambiente, sessao, modo):
+def desenhar_decisao(tela, recursos, ambiente, sessao, modo, mostrar_sensor=True):
     peso_distancia, peso_altura, peso_largura, vies = sessao.parametros
     altura = ambiente.obstaculo.height
     largura = ambiente.obstaculo.width
@@ -114,8 +122,9 @@ def desenhar_decisao(tela, recursos, ambiente, sessao, modo):
     recursos.texto(tela, "DECISAO DA POPPY", 40, 110, ROSA, 1)
     for indice, linha in enumerate(linhas):
         recursos.texto(tela, linha, 40, 130 + indice * 18, escala=1)
-    pygame.draw.rect(tela, ROSA, ambiente.personagem, 1)
-    if ambiente.obstaculo.right >= ambiente.personagem.left:
+    if mostrar_sensor:
+        pygame.draw.rect(tela, ROSA, ambiente.personagem, 1)
+    if mostrar_sensor and ambiente.obstaculo.right >= ambiente.personagem.left:
         pygame.draw.line(tela, ROSA, ambiente.personagem.topright, ambiente.obstaculo.topleft)
     if limiar is not None and 0 <= limiar < LARGURA - ambiente.personagem.right:
         marca_x = round(ambiente.personagem.right + limiar)
@@ -123,10 +132,7 @@ def desenhar_decisao(tela, recursos, ambiente, sessao, modo):
             pygame.draw.rect(tela, ROSA, (marca_x, y, 2, 6))
 
 
-def desenhar(tela, recursos, ambiente, sessao, modo="treino", detalhes=False):
-    tela.blit(recursos.fundo, (0, 0))
-    for caixa in ambiente.caixas:
-        desenhar_caixa(tela, caixa)
+def desenhar_poppy(tela, recursos, ambiente, transparente=False):
     # Corpo e cabeça colidem; pontas das orelhas e cauda são decorativas.
     if ambiente.fim_de_jogo:
         sprite = recursos.sprite(76, atingida=True)
@@ -135,7 +141,57 @@ def desenhar(tela, recursos, ambiente, sessao, modo="treino", detalhes=False):
         indice = quadro_corrida(ambiente.distancia_percorrida) if ambiente.no_chao else 1
         sprite = recursos.sprite_corrida(76, indice)
     apoio = (ambiente.personagem.centerx + POPPY_DESLOCAMENTO_VISUAL_X, ambiente.personagem.bottom)
+    if transparente:
+        sprite = recursos.transparente(sprite)
     tela.blit(sprite, sprite.get_rect(midbottom=apoio))
+
+
+def desenhar_populacao(tela, recursos, treino, detalhes=False):
+    lider = treino.lider
+    ambiente = lider.ambiente
+    vivos = treino.vivos
+    tela.blit(recursos.fundo, (0, 0))
+    for caixa in ambiente.caixas:
+        desenhar_caixa(tela, caixa)
+    # Destinos distribuídos na frente da caixa tornam as linhas sobrepostas mais visíveis.
+    if ambiente.obstaculo.right >= ambiente.personagem.left:
+        for poppy in vivos:
+            origem = poppy.ambiente.personagem.midright
+            destino = (ambiente.obstaculo.left,
+                       ambiente.obstaculo.top + round((poppy.numero - 0.5) * ambiente.obstaculo.height / treino.tamanho))
+            pygame.draw.line(tela, poppy.cor, origem, destino)
+    for poppy in vivos:
+        if poppy is not lider:
+            desenhar_poppy(tela, recursos, poppy.ambiente, transparente=True)
+    if vivos:
+        desenhar_poppy(tela, recursos, lider.ambiente)
+        recursos.texto(tela, f'#{lider.numero:02}', lider.ambiente.personagem.x,
+                       lider.ambiente.personagem.top - 29, lider.cor, 1)
+    recursos.texto(tela, "POPPY", 24, 22, escala=3)
+    recursos.texto(tela, ".AI", 116, 24, ROSA)
+    recursos.texto(tela, "TREINO", 24, 55)
+    recursos.texto(tela, f"GERACAO {treino.geracao}", 24, 78, escala=1)
+    recursos.texto(tela, "SOBREVIVENTES", 242, 18, escala=1)
+    recursos.texto(tela, f"{len(vivos):02}/{treino.tamanho}", 242, 42, escala=3)
+    recursos.texto(tela, "TEMPO", 474, 18)
+    recursos.texto(tela, formatar_tempo(ambiente.tempo_vivo), 474, 42, escala=3)
+    recursos.texto(tela, "RECORDE IA", 694, 18)
+    recursos.texto(tela, formatar_tempo(treino.melhor_tempo), 694, 42, escala=3)
+    if detalhes:
+        desenhar_decisao(tela, recursos, ambiente, lider, "treino", mostrar_sensor=False)
+    pygame.draw.rect(tela, CREME, (0, 368, LARGURA, 32))
+    recursos.texto(tela, "N PROXIMA GERACAO", 24, 380, escala=1)
+    recursos.texto(tela, "ESC MENU", 380, 380, escala=1)
+    recursos.texto(tela, "F11 TELA", 500, 380, escala=1)
+    recursos.texto(tela, "TAB FECHAR IA" if detalhes else "TAB DETALHES IA", 710, 380, escala=1)
+    apresentar(tela)
+
+
+def desenhar(tela, recursos, ambiente, sessao, modo="treino", detalhes=False):
+    tela.blit(recursos.fundo, (0, 0))
+    for caixa in ambiente.caixas:
+        desenhar_caixa(tela, caixa)
+    desenhar_poppy(tela, recursos, ambiente)
     recursos.texto(tela, "POPPY", 24, 22, escala=3)
     recursos.texto(tela, ".AI", 116, 24, ROSA)
     rotulo = {"humano": "JOGAR", "treino": "TREINO", "avaliacao": "AVALIACAO"}[modo]

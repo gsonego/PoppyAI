@@ -13,7 +13,7 @@ import pygame
 import main
 from campeao import GravadorCampeao, carregar_campeao, salvar_campeao
 from config import SEMENTE_TREINO
-from treino import Treino
+from geracoes import TreinoGeracoes
 
 
 class TestGravacao(unittest.TestCase):
@@ -25,7 +25,7 @@ class TestGravacao(unittest.TestCase):
             caminho = Path(pasta) / "campeao.json"
 
             def criar_treino(**opcoes):
-                return Treino(caminho, **opcoes)
+                return TreinoGeracoes(caminho, **opcoes)
 
             def salvar_lento(*pedido):
                 iniciou.set()
@@ -46,11 +46,11 @@ class TestGravacao(unittest.TestCase):
 
             try:
                 with patch.dict(os.environ, {"SDL_VIDEODRIVER": "dummy", "SDL_AUDIODRIVER": "dummy"}), \
-                        patch("main.Treino", side_effect=criar_treino), \
+                        patch("main.TreinoGeracoes", side_effect=criar_treino), \
                         patch("campeao.salvar_campeao", side_effect=salvar_lento), \
                         patch("main.pygame.time.Clock"), \
                         patch("main.pygame.event.get", side_effect=eventos), \
-                        patch("main.desenhar"):
+                        patch("main.desenhar_populacao"):
                     main.main("treino")
             finally:
                 liberar.set()

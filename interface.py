@@ -5,7 +5,7 @@ import pygame
 from config import CHAO_Y, LARGURA
 
 
-def desenhar(tela, fonte, ambiente, treino):
+def desenhar(tela, fonte, ambiente, sessao, modo="treino"):
     tela.fill((245, 245, 245))
 
     pygame.draw.line(
@@ -27,16 +27,33 @@ def desenhar(tela, fonte, ambiente, treino):
             2,
         )
 
+    if modo == "treino":
+        informacoes = (
+            f"Treino | Tentativa: {sessao.tentativa} | "
+            f"Tempo: {ambiente.tempo_vivo:.1f}s | "
+            f"Recorde: {max(0.0, sessao.melhor_tempo):.1f}s"
+        )
+    else:
+        informacoes = (
+            f"Avaliação | Tempo: {ambiente.tempo_vivo:.1f}s | "
+            f"Recorde de treino: {sessao.recorde_treino:.1f}s"
+        )
     texto = fonte.render(
-        f"Tentativa: {treino.tentativa} | "
-        f"Tempo: {ambiente.tempo_vivo:.1f}s | "
-        f"Recorde: {max(0.0, treino.melhor_tempo):.1f}s",
+        informacoes,
         True,
         (40, 40, 40),
     )
     tela.blit(texto, (20, 20))
 
-    if ambiente.fim_de_jogo:
+    if modo == "avaliacao":
+        if sessao.concluida:
+            resultado = "Colisão" if ambiente.fim_de_jogo else "Limite atingido"
+            aviso = f"{resultado}! R: repetir avaliação."
+        else:
+            aviso = "Campeã fixa | R: reiniciar | Salto manual desativado"
+        mensagem = fonte.render(aviso, True, (40, 40, 40))
+        tela.blit(mensagem, (20, 60))
+    elif ambiente.fim_de_jogo:
         mensagem = fonte.render(
             "Colisao! Pressione R para tentar novamente.",
             True,

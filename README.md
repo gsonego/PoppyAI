@@ -8,6 +8,18 @@ No PowerShell:
 .\.venv\Scripts\python.exe main.py
 ```
 
+Para observar a campeã salva, com peso e viés fixos:
+
+```powershell
+.\.venv\Scripts\python.exe main.py --modo avaliacao
+```
+
+O modo padrão continua sendo treino (também pode usar `--modo treino`).
+Na avaliação, a partida para na colisão ou no limite de 30 segundos e mantém
+o resultado na tela. R repete a mesma sequência desde o início; o salto
+manual fica desativado. Esse modo não gera mutações nem grava em `campeao.json`.
+Se não houver campeã salva, o programa informa que é preciso treinar primeiro.
+
 ## Organização
 
 | Arquivo | Responsabilidade |
@@ -17,6 +29,7 @@ No PowerShell:
 | `ambiente.py` | Estado da partida, saltos, obstáculos e colisões. |
 | `politica.py` | Converter a distância e os parâmetros em um pedido de salto. |
 | `treino.py` | Pontuar partidas, preservar a melhor configuração e gerar candidatas. |
+| `avaliacao.py` | Carregar a campeã e acompanhar uma partida com parâmetros fixos. |
 | `campeao.py` | Salvar e carregar a melhor configuração em JSON. |
 | `interface.py` | Desenhar o estado atual, sem modificá-lo. |
 
@@ -34,4 +47,4 @@ O ambiente não conhece pesos nem mutações. A política não conhece a física
 
 A versão do experimento em `campeao.py` deve ser incrementada se mudar a física, a observação, a política ou a geração de obstáculos. O carregamento também verifica o limite e a semente para evitar comparar recordes de condições diferentes.
 
-Os modos separados de treino e avaliação ainda serão implementados. Um recorde no treino não mede generalização para outras sequências. Se resultados de novas sequências orientarem ajustes, elas passam a servir como validação; a avaliação final precisa de outras sequências reservadas.
+A avaliação atual usa a mesma semente 123 do treino, para reproduzir o desempenho da campeã. Ela ainda não mede generalização para outras sequências. Se resultados de novas sequências orientarem ajustes, elas passam a servir como validação; a avaliação final precisa de outras sequências reservadas.

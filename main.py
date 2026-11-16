@@ -15,7 +15,7 @@ def main():
         treino = Treino()
         ambiente = Ambiente(SEMENTE_TREINO)
         tela = pygame.display.set_mode((LARGURA, ALTURA))
-        pygame.display.set_caption("Dino AI")
+        pygame.display.set_caption("PoppyAI")
         relogio = pygame.time.Clock()
         fonte = pygame.font.Font(None, 28)
         executando = True

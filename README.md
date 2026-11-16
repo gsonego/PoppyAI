@@ -1,4 +1,4 @@
-# Dino AI
+# PoppyAI
 
 Experimento de aprendizado com um neurônio e busca evolutiva, sem bibliotecas de machine learning.
 

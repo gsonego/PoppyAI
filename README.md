@@ -31,6 +31,14 @@ sequências. O primeiro obstáculo continua igual. A semente aparece na tela e
 no terminal, e R reinicia com a semente escolhida. Sem `--semente`, a avaliação
 usa 123. Essa opção é exclusiva da avaliação; o treino continua usando 123.
 
+Nos dois modos, a tela mostra peso, viés, distância atual e o pedido da política
+nessa distância. A marca laranja no chão indica o limite em que a decisão muda:
+`limite = -viés / peso * LARGURA`. Com peso negativo, pede salto abaixo do limite;
+com peso positivo, acima. No limite exato, não pede salto (`z > 0`). Peso zero
+produz uma decisão constante e não tem marca. Limites negativos ou fora da tela
+continuam descritos no texto, sem uma marca visível no chão. O pedido só vira
+um salto quando o personagem está no chão e a distância é não negativa.
+
 ## Organização
 
 | Arquivo | Responsabilidade |

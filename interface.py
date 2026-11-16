@@ -3,6 +3,55 @@
 import pygame
 
 from config import CHAO_Y, LARGURA
+from politica import decidir_salto, limiar_salto
+
+
+def desenhar_decisao(tela, fonte, ambiente, sessao, modo):
+    peso, vies = sessao.parametros
+    limiar = limiar_salto(sessao.parametros)
+    cor = (185, 95, 15)
+
+    if peso == 0:
+        regra = "Pede salto em qualquer distância" if vies > 0 else "Nunca pede salto"
+    elif limiar is None:
+        regra = "Limite de salto fora da escala de exibição"
+    else:
+        sentido = "abaixo" if peso < 0 else "acima"
+        regra = f"Pede salto {sentido} de {limiar:.1f} px"
+        if limiar < 0:
+            regra += " (limite atrás do personagem)"
+
+    pedido = decidir_salto(ambiente.distancia, sessao.parametros)
+    if ambiente.fim_de_jogo or (modo == "avaliacao" and sessao.concluida):
+        estado = "partida encerrada"
+    elif not ambiente.no_chao:
+        estado = "em voo; aguarda pouso"
+    elif ambiente.distancia < 0:
+        estado = "obstáculo passou da frente do personagem"
+    else:
+        estado = "no chão"
+
+    linhas = (
+        f"Peso: {peso:.4f} | Viés: {vies:.4f} | Distância: {ambiente.distancia} px",
+        regra,
+        f"Pedido nesta distância: {'SALTAR' if pedido else 'ESPERAR'} | {estado}",
+    )
+    for indice, linha in enumerate(linhas):
+        texto = fonte.render(linha, True, cor if indice == 1 else (40, 40, 40))
+        tela.blit(texto, (20, 120 + indice * 29))
+
+    # A distância é medida entre a frente do personagem e a frente do obstáculo.
+    # A marca indica z = 0; o salto exige z > 0 e personagem no chão.
+    if limiar is not None and limiar >= 0:
+        marca_x = ambiente.personagem.right + limiar
+        if 0 <= marca_x < LARGURA:
+            marca_x = round(marca_x)
+            for y in range(220, CHAO_Y, 12):
+                pygame.draw.line(tela, cor, (marca_x, y), (marca_x, min(y + 6, CHAO_Y)), 2)
+            pygame.draw.line(tela, cor, (marca_x, CHAO_Y - 6), (marca_x, CHAO_Y + 8), 3)
+            rotulo = fonte.render(f"Limite: {limiar:.1f} px", True, cor)
+            rotulo_x = max(10, min(marca_x - rotulo.get_width() // 2, LARGURA - rotulo.get_width() - 10))
+            tela.blit(rotulo, (rotulo_x, CHAO_Y + 14))
 
 
 def desenhar(tela, fonte, ambiente, sessao, modo="treino"):
@@ -63,4 +112,5 @@ def desenhar(tela, fonte, ambiente, sessao, modo="treino"):
         )
         tela.blit(mensagem, (20, 60))
 
+    desenhar_decisao(tela, fonte, ambiente, sessao, modo)
     pygame.display.flip()

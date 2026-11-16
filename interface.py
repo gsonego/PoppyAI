@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pygame
 
-from art.cenario import CREME, ROSA, TINTA, terreno
+from art.cenario import CREME, ROSA, TINTA, criar_faixa_chao, desenhar_chao, terreno
 from art.animacao_poppy import carregar_corrida, quadro_corrida
 from art.fonte_pixel import FontePixel
 from config import ALTURA, CHAO_Y, LARGURA, POPPY_DESLOCAMENTO_VISUAL_X
@@ -22,7 +22,8 @@ class RecursosInterface:
     def __init__(self):
         self.fonte = FontePixel()
         self.fundo = pygame.Surface((LARGURA, ALTURA))
-        terreno(self.fundo)
+        terreno(self.fundo, incluir_chao=False)
+        self.faixa_chao = criar_faixa_chao()
         caminho = Path(__file__).resolve().parent / "art" / "source" / "poppy-aprovada.png"
         imagem = pygame.image.load(caminho).convert_alpha()
         self.poppy = imagem.subsurface(imagem.get_bounding_rect(min_alpha=128))
@@ -30,6 +31,10 @@ class RecursosInterface:
         self.poppy_atingida = imagem_atingida.subsurface(imagem_atingida.get_bounding_rect(min_alpha=128))
         self.corrida = carregar_corrida(caminho.with_name("poppy-corrida-proposta.png"))
         self._sprites = {}
+
+    def desenhar_fundo(self, tela, distancia=0):
+        tela.blit(self.fundo, (0, 0))
+        desenhar_chao(tela, self.faixa_chao, distancia)
 
     def sprite_corrida(self, altura, indice):
         chave = ("corrida", altura, indice)
@@ -67,7 +72,7 @@ def formatar_tempo(segundos):
 
 
 def desenhar_menu(tela, recursos, selecionado=0, aviso=""):
-    tela.blit(recursos.fundo, (0, 0))
+    recursos.desenhar_fundo(tela)
     sprite = recursos.sprite(162)
     tela.blit(sprite, (156, CHAO_Y - sprite.get_height()))
     recursos.texto(tela, "POPPY.AI", 450, 40, escala=4)
@@ -150,7 +155,7 @@ def desenhar_populacao(tela, recursos, treino, detalhes=False):
     lider = treino.lider
     ambiente = lider.ambiente
     vivos = treino.vivos
-    tela.blit(recursos.fundo, (0, 0))
+    recursos.desenhar_fundo(tela, ambiente.distancia_percorrida)
     for caixa in ambiente.caixas:
         desenhar_caixa(tela, caixa)
     # Destinos distribuídos na frente da caixa tornam as linhas sobrepostas mais visíveis.
@@ -189,7 +194,7 @@ def desenhar_populacao(tela, recursos, treino, detalhes=False):
 
 
 def desenhar(tela, recursos, ambiente, sessao, modo="treino", detalhes=False):
-    tela.blit(recursos.fundo, (0, 0))
+    recursos.desenhar_fundo(tela, ambiente.distancia_percorrida)
     for caixa in ambiente.caixas:
         desenhar_caixa(tela, caixa)
     desenhar_poppy(tela, recursos, ambiente)

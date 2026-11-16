@@ -125,6 +125,14 @@ capaz de ultrapassá-los. A colisão e o sensor usam o retângulo total, preench
 pelas duas caixas. No humano e na avaliação, R recomeça a sequência pela caixa
 simples inicial; cada geração do treino também começa nessa mesma sequência.
 
+## Chão em movimento
+
+A grama, a terra e as flores deslizam para a esquerda na mesma velocidade dos
+obstáculos, guiadas pela distância já percorrida. O padrão de chão é carregado
+uma vez e repetido sem emendas. No menu ele fica parado; na colisão ele para;
+reiniciar a partida ou a geração restaura sua posição. Essa mudança é visual
+e não invalida pesos ou recordes. Paisagem e nuvens ainda permanecem estáticas.
+
 ## Velocidade progressiva
 
 Nos três modos, começa em 350 px/s e aumenta continuamente 2,5 px/s a cada
@@ -176,7 +184,7 @@ não são persistidos: ao reabrir, começa uma geração nova com a campeã salv
 | `campeao.py` | Salvar e carregar a melhor configuração em JSON. |
 | `interface.py` | Desenhar menu, partida e painel opcional, sem alterar a simulação. |
 | `janela.py` | Ampliar a apresentação e converter cliques sem alterar a física. |
-| `art/cenario.py` | Desenhar o cenário estático em pixel art. |
+| `art/cenario.py` | Desenhar a paisagem em pixel art e o chão que acompanha o deslocamento. |
 | `art/fonte_pixel.py` | Renderizar a fonte bitmap sem fontes externas. |
 
 O fluxo de cada passo é: observar distância, altura, largura e velocidade → a política pedir ou não um salto → o ambiente executar o passo → o treino verificar se a tentativa acabou → desenhar.

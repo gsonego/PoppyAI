@@ -36,6 +36,18 @@ class TestAnimacao(unittest.TestCase):
         for distancia in (10.5, 40.5, 200):
             self.assertEqual(quadro_corrida(distancia), quadro_corrida(distancia + 128))
 
+    def test_chao_desliza_para_esquerda_sem_mover_paisagem_e_repete_sem_emenda(self):
+        self.recursos.desenhar_fundo(self.tela, 0)
+        inicial = self.tela.copy()
+        self.recursos.desenhar_fundo(self.tela, 12)
+        self.assertEqual(inicial.get_at((26, 345)), self.tela.get_at((14, 345)))
+        self.assertNotEqual(inicial.get_at((26, 345)), self.tela.get_at((26, 345)))
+        self.assertEqual(pygame.image.tostring(inicial.subsurface((0, 0, 900, 300)), "RGB"),
+                         pygame.image.tostring(self.tela.subsurface((0, 0, 900, 300)), "RGB"))
+        solo = pygame.image.tostring(self.tela.subsurface((0, 330, 900, 38)), "RGB")
+        self.recursos.desenhar_fundo(self.tela, 12 + 144)
+        self.assertEqual(solo, pygame.image.tostring(self.tela.subsurface((0, 330, 900, 38)), "RGB"))
+
     def test_distancia_acompanha_mundo_para_na_morte_e_zera_ao_reiniciar(self):
         ambiente = Ambiente(123)
         for _ in range(10):

@@ -7,9 +7,10 @@ import pygame
 from ambiente import Ambiente
 from avaliacao import Avaliacao
 from campeao import GravadorCampeao
-from config import ALTURA, FPS, LARGURA, SEMENTE_TREINO
+from config import FPS, SEMENTE_TREINO
 from humano import JogoHumano
 from interface import OPCOES_MENU, RecursosInterface, botoes_menu, desenhar, desenhar_menu
+from janela import criar_janela, posicao_logica, tratar_redimensionamento
 from politica import decidir_salto
 from treino import Treino
 
@@ -19,6 +20,7 @@ def escolher_modo(tela, recursos, relogio, aviso=""):
     while True:
         relogio.tick(FPS)
         for evento in pygame.event.get():
+            tratar_redimensionamento(evento)
             if evento.type == pygame.QUIT:
                 return None
             if evento.type == pygame.KEYDOWN:
@@ -29,8 +31,11 @@ def escolher_modo(tela, recursos, relogio, aviso=""):
                 if evento.key in (pygame.K_RETURN, pygame.K_SPACE):
                     return OPCOES_MENU[selecionado][0]
             if evento.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                posicao = posicao_logica(evento.pos)
+                if posicao is None:
+                    continue
                 for indice, retangulo in enumerate(botoes_menu()):
-                    if retangulo.collidepoint(evento.pos):
+                    if retangulo.collidepoint(posicao):
                         selecionado = indice
                         if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
                             return OPCOES_MENU[indice][0]
@@ -57,6 +62,7 @@ def jogar(tela, recursos, relogio, modo, semente):
             if gravador is not None:
                 gravador.verificar_erro()
             for evento in pygame.event.get():
+                tratar_redimensionamento(evento)
                 if evento.type == pygame.QUIT:
                     return True
                 if evento.type == pygame.KEYDOWN:
@@ -110,7 +116,7 @@ def main(modo=None, semente=None):
     semente_partida = SEMENTE_TREINO if semente is None else semente
     pygame.init()
     try:
-        tela = pygame.display.set_mode((LARGURA, ALTURA))
+        tela = criar_janela()
         recursos = RecursosInterface()
         relogio = pygame.time.Clock()
         aviso = ""

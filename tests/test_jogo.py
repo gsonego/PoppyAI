@@ -14,6 +14,7 @@ import pygame
 import main
 from humano import JogoHumano
 from interface import RecursosInterface, desenhar_menu, formatar_tempo
+from janela import apresentar, area_conteudo, criar_janela, posicao_logica, tratar_redimensionamento
 
 
 def tecla(codigo):
@@ -89,6 +90,50 @@ class TestJogo(unittest.TestCase):
         evento = pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=(500, 180), button=1)
         with patch("main.pygame.event.get", return_value=[evento]), patch("main.pygame.time.Clock"):
             self.assertEqual(main.escolher_modo(tela, RecursosInterface(), pygame.time.Clock()), "treino")
+
+    def test_menu_aceita_clique_ampliado_com_faixas(self):
+        pygame.init()
+        pygame.display.set_mode((1800, 1000), pygame.RESIZABLE)
+        tela = pygame.Surface((900, 400))
+        recursos = RecursosInterface()
+        desenhar_menu(tela, recursos)
+        # O conteúdo é ampliado 2×, com 100 pixels de faixa acima e abaixo.
+        evento = pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=(1000, 460), button=1)
+        with patch("main.pygame.event.get", return_value=[evento]), patch("main.pygame.time.Clock"):
+            self.assertEqual(main.escolher_modo(tela, recursos, pygame.time.Clock()), "treino")
+        self.assertIsNone(posicao_logica((1000, 50)))
+
+    def test_redimensionar_preserva_proporcao_e_pixels_sem_suavizacao(self):
+        pygame.init()
+        pygame.display.set_mode((900, 400), pygame.RESIZABLE)
+        evento = pygame.event.Event(pygame.VIDEORESIZE, w=1800, h=1000)
+        tratar_redimensionamento(evento)
+        self.assertEqual(area_conteudo(), pygame.Rect(0, 100, 1800, 800))
+        tela = pygame.Surface((900, 400))
+        tela.fill("#B7E5F0")
+        tela.set_at((500, 180), "#DC7189")
+        apresentar(tela)
+        janela = pygame.display.get_surface()
+        for x, y in ((1000, 460), (1001, 460), (1000, 461), (1001, 461)):
+            self.assertEqual(janela.get_at((x, y))[:3], (220, 113, 137))
+        self.assertEqual(janela.get_at((1000, 50))[:3], (73, 59, 69))
+
+    def test_abre_em_tela_cheia_e_f11_alterna_sem_perder_o_desenho(self):
+        pygame.init()
+        tela = criar_janela()
+        self.assertTrue(pygame.display.get_surface().get_flags() & pygame.FULLSCREEN)
+        self.assertEqual(pygame.display.get_surface().get_size(), pygame.display.get_desktop_sizes()[0])
+        self.assertEqual(tela.get_size(), (900, 400))
+        tratar_redimensionamento(tecla(pygame.K_F11))
+        self.assertFalse(pygame.display.get_surface().get_flags() & pygame.FULLSCREEN)
+        tamanho = pygame.display.get_surface().get_size()
+        tratar_redimensionamento(tecla(pygame.K_F11))
+        self.assertTrue(pygame.display.get_surface().get_flags() & pygame.FULLSCREEN)
+        # Eventos antigos de resize não devem fazer sair da tela cheia.
+        tratar_redimensionamento(pygame.event.Event(pygame.VIDEORESIZE, w=900, h=400))
+        self.assertTrue(pygame.display.get_surface().get_flags() & pygame.FULLSCREEN)
+        tratar_redimensionamento(tecla(pygame.K_F11))
+        self.assertEqual(pygame.display.get_surface().get_size(), tamanho)
 
     def test_tab_alterna_detalhes_sem_mudar_parametros(self):
         sessao = SimpleNamespace(concluida=False, parametros=(-1.5, 0.7, 0.5), recorde_treino=30,

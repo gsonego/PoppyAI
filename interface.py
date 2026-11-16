@@ -7,6 +7,7 @@ import pygame
 from art.cenario import CREME, ROSA, TINTA, terreno
 from art.fonte_pixel import FontePixel
 from config import ALTURA, CHAO_Y, LARGURA
+from janela import apresentar
 from politica import decidir_salto, limiar_salto
 
 OPCOES_MENU = (("humano", "JOGAR"), ("treino", "TREINAR IA"), ("avaliacao", "VER A IA JOGAR"))
@@ -58,7 +59,8 @@ def desenhar_menu(tela, recursos, selecionado=0, aviso=""):
     pygame.draw.rect(tela, CREME, (0, 368, LARGURA, 32))
     recursos.texto(tela, "SETAS + ENTER OU CLIQUE PARA ESCOLHER", 24, 380, escala=1)
     recursos.texto(tela, "ESC SAIR", 780, 380, escala=1)
-    pygame.display.flip()
+    recursos.texto(tela, "F11 TELA", 650, 380, escala=1)
+    apresentar(tela)
 
 
 def desenhar_caixa(tela, retangulo):
@@ -136,6 +138,7 @@ def desenhar(tela, recursos, ambiente, sessao, modo="treino", detalhes=False):
     if modo in ("humano", "treino"):
         recursos.texto(tela, "ESPACO SALTAR", 174, 380, escala=1)
     recursos.texto(tela, "ESC MENU", 380, 380, escala=1)
+    recursos.texto(tela, "F11 TELA", 500, 380, escala=1)
     if modo != "humano":
         recursos.texto(tela, "TAB FECHAR IA" if detalhes else "TAB DETALHES IA", 710, 380, escala=1)
     if detalhes and modo != "humano":
@@ -144,4 +147,4 @@ def desenhar(tela, recursos, ambiente, sessao, modo="treino", detalhes=False):
         pygame.draw.rect(tela, TINTA, (300, 222, 372, 66))
         recursos.texto(tela, "FIM DE JOGO", 326, 234, CREME)
         recursos.texto(tela, "R PARA REPETIR / ESC MENU", 326, 264, CREME, 1)
-    pygame.display.flip()
+    apresentar(tela)

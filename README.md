@@ -18,6 +18,10 @@ Escolha com as setas e Enter, ou clique em uma opção:
 
 O visual usa a Poppy aprovada em pixel art, cenário claro e fonte bitmap incluída
 no projeto. O cenário e os sprites são carregados uma vez; a física continua igual.
+O jogo abre em tela cheia, na resolução do monitor. `F11` alterna entre tela cheia
+e janela; no modo janela, você pode redimensionar ou maximizar. A imagem mantém a proporção, com faixas
+nas sobras, e usa ampliação sem suavização para preservar os pixels. As coordenadas
+do mouse são convertidas para que os botões continuem funcionando em qualquer tamanho.
 Orelhas e cauda são partes decorativas da arte; `Tab` também mostra o retângulo
 de colisão nos modos da IA.
 
@@ -89,6 +93,7 @@ não garante melhora do desempenho.
 | `humano.py` | Acompanhar a partida humana e salvar o recorde pessoal separado. |
 | `campeao.py` | Salvar e carregar a melhor configuração em JSON. |
 | `interface.py` | Desenhar menu, partida e painel opcional, sem alterar a simulação. |
+| `janela.py` | Ampliar a apresentação e converter cliques sem alterar a física. |
 | `art/cenario.py` | Desenhar o cenário estático em pixel art. |
 | `art/fonte_pixel.py` | Renderizar a fonte bitmap sem fontes externas. |
 

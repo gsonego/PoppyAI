@@ -20,6 +20,17 @@ o resultado na tela. R repete a mesma sequência desde o início; o salto
 manual fica desativado. Esse modo não gera mutações nem grava em `campeao.json`.
 Se não houver campeã salva, o programa informa que é preciso treinar primeiro.
 
+Para avaliar em outra sequência de obstáculos:
+
+```powershell
+.\.venv\Scripts\python.exe main.py --modo avaliacao --semente 456
+```
+
+A mesma semente repete a mesma sequência; sementes diferentes geram outras
+sequências. O primeiro obstáculo continua igual. A semente aparece na tela e
+no terminal, e R reinicia com a semente escolhida. Sem `--semente`, a avaliação
+usa 123. Essa opção é exclusiva da avaliação; o treino continua usando 123.
+
 ## Organização
 
 | Arquivo | Responsabilidade |
@@ -43,8 +54,8 @@ O ambiente não conhece pesos nem mutações. A política não conhece a física
 - Treino sempre na sequência de obstáculos da semente 123.
 - Campeã salva em `campeao.json`, ao lado dos arquivos; empates preservam a anterior.
 - Ao reabrir, a primeira candidata usa os parâmetros salvos. O estado do gerador de mutações não é salvo, portanto a busca não continua exatamente de onde parou.
-- Espaço permite salto manual e R reposiciona o jogo. Tentativas com intervenção manual não entram no recorde. R mantém o tamanho e a sequência atuais dos obstáculos, como na versão anterior.
+- No treino, Espaço permite salto manual e R reposiciona o jogo. Tentativas com intervenção manual não entram no recorde. R mantém o tamanho e a sequência atuais dos obstáculos, como na versão anterior.
 
 A versão do experimento em `campeao.py` deve ser incrementada se mudar a física, a observação, a política ou a geração de obstáculos. O carregamento também verifica o limite e a semente para evitar comparar recordes de condições diferentes.
 
-A avaliação atual usa a mesma semente 123 do treino, para reproduzir o desempenho da campeã. Ela ainda não mede generalização para outras sequências. Se resultados de novas sequências orientarem ajustes, elas passam a servir como validação; a avaliação final precisa de outras sequências reservadas.
+A avaliação usa a semente 123 por padrão para reproduzir o desempenho da campeã; `--semente` permite observar o desempenho em outras sequências. Se resultados dessas sequências orientarem ajustes, elas passam a servir como validação; a avaliação final precisa de outras sequências reservadas.

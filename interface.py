@@ -53,6 +53,8 @@ def desenhar(tela, fonte, ambiente, sessao, modo="treino"):
             aviso = "Campeã fixa | R: reiniciar | Salto manual desativado"
         mensagem = fonte.render(aviso, True, (40, 40, 40))
         tela.blit(mensagem, (20, 60))
+        semente = fonte.render(f"Semente da avaliação: {sessao.semente}", True, (40, 40, 40))
+        tela.blit(semente, (20, 95))
     elif ambiente.fim_de_jogo:
         mensagem = fonte.render(
             "Colisao! Pressione R para tentar novamente.",

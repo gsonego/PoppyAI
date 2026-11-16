@@ -28,7 +28,7 @@ de colisão nos modos da IA.
 Durante a partida: `Espaço` salta (humano e treino), `R` reinicia, `Esc` volta
 ao menu e `Tab` abre ou fecha os detalhes da IA (treino e avaliação).
 No modo humano, a colisão mantém o resultado na tela; `R` repete a partida.
-Seu recorde é salvo em `recorde_humano.json` ao morrer, reiniciar, voltar ao menu
+Seu recorde é salvo em `recorde_humano_caixas_duplas.json` ao morrer, reiniciar, voltar ao menu
 ou fechar a janela. Ele é separado dos pesos e do recorde da IA.
 
 Para entrar diretamente, use `--modo humano`, `--modo treino` ou
@@ -43,7 +43,7 @@ Para observar a campeã salva, com os dois pesos e o viés fixos:
 Sem `--modo`, o programa abre o menu.
 Na avaliação, a partida continua até a colisão, sem limite de tempo, e mantém
 o resultado na tela. R repete a mesma sequência desde o início; o salto
-manual fica desativado. Esse modo não gera mutações nem grava em `campeao_altura.json`.
+manual fica desativado. Esse modo não gera mutações nem grava em `campeao_caixas_duplas.json`.
 Se não houver campeã salva, o programa informa que é preciso treinar primeiro.
 
 Para avaliar em outra sequência de obstáculos:
@@ -74,11 +74,28 @@ viés, sem marca de distância. Limites negativos ou fora da tela continuam
 descritos no texto, sem uma marca visível no chão. O pedido só vira um salto
 quando o personagem está no chão e a distância é não negativa.
 
-O modelo anterior, com apenas distância, permanece salvo em `campeao.json`.
-O modelo com altura usa a versão 2 do experimento e salva em
-`campeao_altura.json`. É necessário treiná-lo antes de avaliá-lo; o recorde
-antigo não é transferido. Adicionar uma entrada permite novas regras, mas
-não garante melhora do desempenho.
+O experimento atual é a versão 3, com caixas duplas. Seus pesos ficam em
+`campeao_caixas_duplas.json` e o recorde humano em
+`recorde_humano_caixas_duplas.json`. É necessário treinar uma campeã desta versão
+antes de avaliá-la. Os arquivos anteriores (`campeao.json`, `campeao_altura.json`
+e `recorde_humano.json`) são preservados e não transferem recordes para o novo desafio.
+A IA continua com duas entradas: distância até a frente do conjunto e altura total.
+A largura aparece no painel de detalhes, mas ainda não é uma entrada da política.
+
+## Caixas duplas
+
+Humano, treino e avaliação usam a mesma geração. O primeiro obstáculo continua
+sendo uma caixa simples de 30 × 50. Nos seguintes sorteios, a distribuição é:
+
+- 50%: caixa simples, nas dimensões que já existiam.
+- 25%: duas caixas iguais lado a lado, sem vão; largura total de 40 a 80 px.
+- 25%: duas caixas iguais empilhadas; altura total de 60 a 84 px.
+
+A velocidade e a força do salto continuam iguais. As dimensões máximas dos
+pares foram verificadas com a física atual para que exista um momento de salto
+capaz de ultrapassá-los. A colisão e o sensor usam o retângulo total, preenchido
+pelas duas caixas. No treino, R preserva o tipo atual; no humano e na avaliação,
+R recomeça a sequência pela caixa simples inicial.
 
 ## Organização
 
@@ -106,12 +123,12 @@ O ambiente não conhece pesos nem mutações. A política não conhece a física
 - Passo fixo de 1/60 s e tentativas sem limite de tempo: terminam na colisão.
 - No treino, os parâmetros mudam após a colisão. Novos recordes são salvos durante a partida, a cada avanço de aproximadamente um segundo sobre o recorde salvo, e também na colisão, antes de reiniciar, ao voltar ao menu ou ao fechar a janela. Tentativas com intervenção manual não substituem a campeã. Se uma candidata sobreviver indefinidamente, a mesma tentativa continuará rodando e sendo salva enquanto melhora o recorde.
 - Treino sempre na sequência de obstáculos da semente 123.
-- Campeã salva em `campeao_altura.json`, ao lado dos arquivos; empates preservam a anterior.
+- Campeã salva em `campeao_caixas_duplas.json`, ao lado dos arquivos; empates preservam a anterior.
 - Durante o jogo, as gravações ocorrem em uma thread separada para não bloquear os quadros. Se o disco estiver ocupado, a fila mantém apenas o pedido mais recente. Ao fechar a janela, o programa espera a última gravação terminar. Erros de gravação são informados.
 - Ao reabrir, a primeira candidata usa os parâmetros salvos. O estado do gerador de mutações não é salvo, portanto a busca não continua exatamente de onde parou.
 - No treino, Espaço permite salto manual e R reposiciona o jogo. Tentativas com intervenção manual não entram no recorde. R mantém o tamanho e a sequência atuais dos obstáculos, como na versão anterior.
 
-A versão do experimento em `campeao.py` deve ser incrementada se mudar a física, a observação, a política ou a geração de obstáculos. O carregamento também verifica o limite e a semente. O limite atual é `null` no JSON (sem teto). Campeãs da versão 2 com o antigo limite de 30 segundos continuam válidas: seus tempos são os já alcançados, e um recorde de 30 segundos não significa que houve colisão nesse instante. As próximas gravações usam o formato sem teto.
+A versão do experimento em `campeao.py` deve ser incrementada se mudar a física, a observação, a política ou a geração de obstáculos. O carregamento também verifica o limite e a semente. O limite atual é `null` no JSON (sem teto). Recordes de versões anteriores não são comparados com os do desafio atual.
 
 A avaliação usa a semente 123 por padrão para reproduzir o desempenho da campeã; `--semente` permite observar o desempenho em outras sequências. Se resultados dessas sequências orientarem ajustes, elas passam a servir como validação; a avaliação final precisa de outras sequências reservadas.
 

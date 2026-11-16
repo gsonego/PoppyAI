@@ -7,7 +7,7 @@ from threading import Condition, Thread
 
 
 # Incremente se mudar a física, observação, política ou geração de obstáculos.
-VERSAO_EXPERIMENTO = 2
+VERSAO_EXPERIMENTO = 3
 
 
 class GravadorCampeao:

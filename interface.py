@@ -87,7 +87,7 @@ def desenhar_decisao(tela, recursos, ambiente, sessao, modo):
         regra = f"SALTA {sentido} DE {limiar:.1f} PX NESTA ALTURA"
     linhas = [
         f"PESO DIST {peso_distancia:+.4f} / PESO ALT {peso_altura:+.4f} / VIES {vies:+.4f}",
-        f"DISTANCIA {ambiente.distancia} PX / ALTURA {altura} PX / {'SALTAR' if pedido else 'ESPERAR'}",
+        f"DIST {ambiente.distancia} PX / ALT {altura} PX / LARG {ambiente.obstaculo.width} PX / {'SALTAR' if pedido else 'ESPERAR'}",
         regra,
     ]
     if modo == "avaliacao":
@@ -110,7 +110,8 @@ def desenhar_decisao(tela, recursos, ambiente, sessao, modo):
 
 def desenhar(tela, recursos, ambiente, sessao, modo="treino", detalhes=False):
     tela.blit(recursos.fundo, (0, 0))
-    desenhar_caixa(tela, ambiente.obstaculo)
+    for caixa in ambiente.caixas:
+        desenhar_caixa(tela, caixa)
     # Orelhas e cauda são decorativas; o retângulo da física é preservado.
     sprite = recursos.sprite(76)
     tela.blit(sprite, sprite.get_rect(midbottom=ambiente.personagem.midbottom))

@@ -13,5 +13,5 @@ PASSO = 1.0 / FPS
 SEMENTE_PARAMETROS = 42
 SEMENTE_TREINO = 123
 LIMITE_TENTATIVA = None  # Sem limite de tempo: a tentativa termina na colisão.
-ARQUIVO_CAMPEAO = Path(__file__).resolve().with_name("campeao_altura.json")
-ARQUIVO_RECORDE_HUMANO = Path(__file__).resolve().with_name("recorde_humano.json")
+ARQUIVO_CAMPEAO = Path(__file__).resolve().with_name("campeao_caixas_duplas.json")
+ARQUIVO_RECORDE_HUMANO = Path(__file__).resolve().with_name("recorde_humano_caixas_duplas.json")

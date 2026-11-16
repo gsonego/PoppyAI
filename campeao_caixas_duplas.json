@@ -1,0 +1,11 @@
+{
+  "experimento": {
+    "versao": 3,
+    "limite_segundos": null,
+    "semente_treino": 123
+  },
+  "peso_distancia": 0.557707193831535,
+  "peso_altura": -1.8999569791093323,
+  "vies": -0.4499413632617615,
+  "tempo_segundos": 2.166666666666664
+}

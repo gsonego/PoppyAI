@@ -1,3 +1,4 @@
 # Cache de bytecode gerado pelo Python
 __pycache__/
 *.py[cod]
+.codex-attachments

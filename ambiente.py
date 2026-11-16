@@ -1,6 +1,7 @@
 """Estado e regras de uma partida, sem conhecer o treino ou a janela."""
 
 import random
+from dataclasses import dataclass
 
 import pygame
 
@@ -8,15 +9,44 @@ from config import (
     ACELERACAO_OBSTACULO, CHAO_Y, GRAVIDADE, LARGURA, PASSO, POPPY_ALTURA, POPPY_LARGURA, POPPY_X,
     VELOCIDADE_MAXIMA, VELOCIDADE_OBSTACULO,
     VELOCIDADE_SALTO,
+    INTERVALO_MINIMO_PX, TEMPO_INTERVALO_FINAL, TEMPO_INTERVALO_INICIAL, TEMPO_REDUCAO_INTERVALOS,
 )
+
+
+@dataclass
+class GrupoObstaculo:
+    retangulo: pygame.Rect
+    x: float
+    tipo: str
+    intervalo_anterior: int = 0
 
 
 class Ambiente:
     def __init__(self, semente):
         self.gerador_obstaculos = random.Random()
         self.personagem = pygame.Rect(POPPY_X, CHAO_Y - POPPY_ALTURA, POPPY_LARGURA, POPPY_ALTURA)
-        self.obstaculo = pygame.Rect(LARGURA, CHAO_Y - 50, 30, 50)
+        self._alvo = GrupoObstaculo(pygame.Rect(LARGURA, CHAO_Y - 50, 30, 50), float(LARGURA), "simples")
         self.reiniciar(semente)
+
+    @property
+    def obstaculo(self):
+        return self._alvo.retangulo
+
+    @property
+    def obstaculo_x(self):
+        return self._alvo.x
+
+    @obstaculo_x.setter
+    def obstaculo_x(self, valor):
+        self._alvo.x = float(valor)
+
+    @property
+    def tipo_obstaculo(self):
+        return self._alvo.tipo
+
+    @tipo_obstaculo.setter
+    def tipo_obstaculo(self, valor):
+        self._alvo.tipo = valor
 
     @property
     def distancia(self):
@@ -29,43 +59,71 @@ class Ambiente:
     @property
     def caixas(self):
         """Caixas que preenchem exatamente o retângulo de colisão do conjunto."""
-        x, y, largura, altura = self.obstaculo
-        if self.tipo_obstaculo == "lado_a_lado":
+        return self._caixas_do_grupo(self._alvo)
+
+    @property
+    def caixas_visiveis(self):
+        return tuple(caixa for grupo in self.grupos
+                     if grupo.retangulo.left < LARGURA and grupo.retangulo.right > 0
+                     for caixa in self._caixas_do_grupo(grupo))
+
+    @staticmethod
+    def _caixas_do_grupo(grupo):
+        x, y, largura, altura = grupo.retangulo
+        if grupo.tipo == "lado_a_lado":
             metade = largura // 2
             return (pygame.Rect(x, y, metade, altura),
                     pygame.Rect(x + metade, y, largura - metade, altura))
-        if self.tipo_obstaculo == "empilhadas":
+        if grupo.tipo == "empilhadas":
             metade = altura // 2
             return (pygame.Rect(x, y, largura, metade),
                     pygame.Rect(x, y + metade, largura, altura - metade))
-        return (self.obstaculo.copy(),)
+        return (grupo.retangulo.copy(),)
 
-    def _sortear_obstaculo(self):
+    def _sortear_obstaculo(self, x):
         # Metade dos sorteios mantém uma caixa simples; os demais introduzem pares.
-        self.tipo_obstaculo = self.gerador_obstaculos.choice(
+        tipo = self.gerador_obstaculos.choice(
             ("simples", "simples", "lado_a_lado", "empilhadas"),
         )
-        if self.tipo_obstaculo == "lado_a_lado":
+        if tipo == "lado_a_lado":
             largura = 2 * self.gerador_obstaculos.randint(20, 40)
             altura = self.gerador_obstaculos.randint(30, 70)
-        elif self.tipo_obstaculo == "empilhadas":
+        elif tipo == "empilhadas":
             largura = self.gerador_obstaculos.randint(20, 40)
             # Dobrar os antigos 70 px ultrapassaria a altura máxima do salto.
             altura = 2 * self.gerador_obstaculos.randint(30, 42)
         else:
             largura = self.gerador_obstaculos.randint(20, 50)
             altura = self.gerador_obstaculos.randint(30, 70)
-        self.obstaculo.size = (largura, altura)
-        self.obstaculo.bottom = CHAO_Y
-        intervalo_extra = self.gerador_obstaculos.randint(0, 250)
-        self.obstaculo_x = float(LARGURA + intervalo_extra)
-        self.obstaculo.x = round(self.obstaculo_x)
+        retangulo = pygame.Rect(round(x), CHAO_Y - altura, largura, altura)
+        return GrupoObstaculo(retangulo, float(x), tipo)
+
+    def _sortear_intervalo(self):
+        progresso = min(1.0, self.tempo_vivo / TEMPO_REDUCAO_INTERVALOS)
+        minimo, maximo = (inicio + (fim - inicio) * progresso
+                          for inicio, fim in zip(TEMPO_INTERVALO_INICIAL, TEMPO_INTERVALO_FINAL))
+        tempo = self.gerador_obstaculos.uniform(minimo, maximo)
+        return max(INTERVALO_MINIMO_PX, round(self.velocidade * tempo))
+
+    def _completar_pista(self):
+        self.grupos = [grupo for grupo in self.grupos if grupo.retangulo.right >= 0]
+        if not self.grupos:
+            self.grupos.append(self._sortear_obstaculo(LARGURA))
+        while self.grupos[-1].retangulo.left < LARGURA:
+            anterior = self.grupos[-1]
+            intervalo = self._sortear_intervalo()
+            proximo = self._sortear_obstaculo(anterior.x + anterior.retangulo.width + intervalo)
+            proximo.intervalo_anterior = intervalo
+            self.grupos.append(proximo)
+        self._alvo = next((g for g in self.grupos if g.retangulo.right > self.personagem.left), self.grupos[-1])
 
     def _reposicionar(self):
         self.posicao_y = float(CHAO_Y - self.personagem.height)
         self.personagem.y = round(self.posicao_y)
         self.velocidade_y = 0.0
         self.no_chao = True
+        self._alvo = GrupoObstaculo(self.obstaculo.copy(), float(LARGURA), self.tipo_obstaculo)
+        self.grupos = [self._alvo]
         self.obstaculo_x = float(LARGURA)
         self.obstaculo.x = round(self.obstaculo_x)
         self.tempo_vivo = 0.0
@@ -110,13 +168,13 @@ class Ambiente:
 
         deslocamento = self.velocidade * PASSO
         self.distancia_percorrida += deslocamento
-        self.obstaculo_x -= deslocamento
-        self.obstaculo.x = round(self.obstaculo_x)
-        if self.obstaculo.right < 0:
-            self._sortear_obstaculo()
+        for grupo in self.grupos:
+            grupo.x -= deslocamento
+            grupo.retangulo.x = round(grupo.x)
+        self._completar_pista()
 
         # Os pares não têm vãos: a união é um retângulo, usado também no sensor.
-        if self.personagem.colliderect(self.obstaculo):
+        if any(self.personagem.colliderect(grupo.retangulo) for grupo in self.grupos):
             self.fim_de_jogo = True
         else:
             self.tempo_vivo += PASSO

@@ -86,11 +86,12 @@ class TestVelocidade(unittest.TestCase):
                         ambiente.obstaculo.bottom = CHAO_Y
                         ambiente.obstaculo_x = float(ambiente.personagem.right + distancia)
                         ambiente.obstaculo.x = round(ambiente.obstaculo_x)
+                        alvo_testado = ambiente.obstaculo
                         for passo in range(100):
                             ambiente.avancar(passo == 0)
                             if ambiente.fim_de_jogo:
                                 break
-                            if ambiente.obstaculo.right <= ambiente.personagem.left:
+                            if alvo_testado.right <= ambiente.personagem.left:
                                 passou = True
                                 break
                         if passou:

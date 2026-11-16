@@ -156,7 +156,7 @@ def desenhar_populacao(tela, recursos, treino, detalhes=False):
     ambiente = lider.ambiente
     vivos = treino.vivos
     recursos.desenhar_fundo(tela, ambiente.distancia_percorrida)
-    for caixa in ambiente.caixas:
+    for caixa in ambiente.caixas_visiveis:
         desenhar_caixa(tela, caixa)
     # Destinos distribuídos na frente da caixa tornam as linhas sobrepostas mais visíveis.
     if ambiente.obstaculo.right >= ambiente.personagem.left:
@@ -195,7 +195,7 @@ def desenhar_populacao(tela, recursos, treino, detalhes=False):
 
 def desenhar(tela, recursos, ambiente, sessao, modo="treino", detalhes=False):
     recursos.desenhar_fundo(tela, ambiente.distancia_percorrida)
-    for caixa in ambiente.caixas:
+    for caixa in ambiente.caixas_visiveis:
         desenhar_caixa(tela, caixa)
     desenhar_poppy(tela, recursos, ambiente)
     recursos.texto(tela, "POPPY", 24, 22, escala=3)

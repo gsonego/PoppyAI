@@ -41,7 +41,7 @@ ao menu e `Tab` abre ou fecha os detalhes da IA (treino e avaliação).
 No modo humano, a colisão mantém o resultado na tela; `R` repete a partida.
 A Poppy fica vermelha ao colidir no humano e na avaliação e permanece assim
 até reiniciar. No treino, cada Poppy que colide é removida junto com sua linha.
-Seu recorde é salvo em `recorde_humano_velocidade.json` ao morrer, reiniciar, voltar ao menu
+Seu recorde é salvo em `recorde_humano_intervalos.json` ao morrer, reiniciar, voltar ao menu
 ou fechar a janela. Ele é separado dos pesos e do recorde da IA.
 
 Para entrar diretamente, use `--modo humano`, `--modo treino` ou
@@ -56,7 +56,7 @@ Para observar a campeã salva, com os quatro pesos e o viés fixos:
 Sem `--modo`, o programa abre o menu.
 Na avaliação, a partida continua até a colisão, sem limite de tempo, e mantém
 o resultado na tela. R repete a mesma sequência desde o início; o salto
-manual fica desativado. Esse modo não gera mutações nem grava em `dados/campeoes/campeao_velocidade.json`.
+manual fica desativado. Esse modo não gera mutações nem grava em `dados/campeoes/campeao_intervalos.json`.
 Se não houver campeã salva, o programa informa que é preciso treinar primeiro.
 
 Para avaliar em outra sequência de obstáculos:
@@ -93,12 +93,13 @@ viés, sem marca de distância. Limites negativos ou fora da tela continuam
 descritos no texto, sem uma marca visível no chão. O pedido só vira um salto
 quando o personagem está no chão e a distância é não negativa.
 
-O modelo da IA é a versão 6, com quatro pesos e um viés, salvo em
-`dados/campeoes/campeao_velocidade.json`. As regras da partida são a versão 5,
-com o recorde pessoal em `recorde_humano_velocidade.json`. A aceleração muda o
+O modelo da IA é a versão 7, com quatro pesos e um viés, salvo em
+`dados/campeoes/campeao_intervalos.json`. As regras da partida são a versão 6,
+com o recorde pessoal em `recorde_humano_intervalos.json`. Os intervalos menores mudam o
 desafio: é necessário novo treino e novos recordes. As campeãs anteriores foram
 preservadas em `dados/campeoes/`, sem reaproveitar suas pontuações no novo modelo.
-As forças do salto continuam iguais e os maiores obstáculos permanecem ultrapassáveis.
+As forças do salto e a aceleração continuam iguais. Os pesos anteriores permanecem
+em seus arquivos, incluindo `dados/campeoes/campeao_velocidade.json`.
 
 A pasta `dados/campeoes/` é criada automaticamente no primeiro salvamento e é
 ignorada pelo Git. Os arquivos das campeãs que eram versionados foram retirados
@@ -124,6 +125,27 @@ pares foram verificadas com a física atual para que exista um momento de salto
 capaz de ultrapassá-los. A colisão e o sensor usam o retângulo total, preenchido
 pelas duas caixas. No humano e na avaliação, R recomeça a sequência pela caixa
 simples inicial; cada geração do treino também começa nessa mesma sequência.
+
+## Intervalos menores e variáveis
+
+A pista mantém vários conjuntos de caixas ao mesmo tempo. Os novos conjuntos
+entram pela borda direita; os antigos continuam visíveis até saírem pela esquerda.
+A colisão considera todos eles, e a observação da IA aponta para o próximo conjunto
+que ainda não passou completamente pela personagem.
+
+O intervalo é o vão entre a traseira de um conjunto e a frente do seguinte.
+Sorteamos uma duração entre 1,8 e 2,3 segundos no início e reduzimos essa faixa
+continuamente até 0,85 a 1,15 segundos aos 90 segundos de partida. A duração
+sorteada é convertida em pixels usando a velocidade no momento de gerar o conjunto.
+O vão nunca fica abaixo de 567 pixels: esse piso considera um salto completo,
+mais 0,15 segundo de margem, na velocidade máxima. Por isso, o tempo efetivo
+entre conjuntos pode ser maior que a faixa sorteada, especialmente em velocidades
+mais baixas. A largura dos conjuntos também entra no tempo entre suas frentes.
+
+A mesma semente reproduz tipos, dimensões e intervalos para todas as Poppys.
+Reiniciar restaura a progressão inicial. Testes de saltos consecutivos alternam
+os pares máximos no menor intervalo e verificam a passagem em 350, 500 e 650 px/s,
+com a aceleração ativa.
 
 ## Chão em movimento
 
@@ -196,7 +218,7 @@ O ambiente não conhece pesos nem mutações. A política não conhece a física
 - Passo fixo de 1/60 s e tentativas sem limite de tempo: terminam na colisão.
 - No treino coletivo, os parâmetros mudam entre gerações. Novos recordes são salvos durante a partida, a cada avanço de aproximadamente um segundo sobre o recorde salvo, e também ao encerrar uma geração, voltar ao menu ou fechar a janela.
 - Treino sempre na sequência de obstáculos da semente 123.
-- Campeã salva em `dados/campeoes/campeao_velocidade.json`, fora do versionamento; empates preservam a anterior.
+- Campeã salva em `dados/campeoes/campeao_intervalos.json`, fora do versionamento; empates preservam a anterior.
 - Durante o jogo, as gravações ocorrem em uma thread separada para não bloquear os quadros. Se o disco estiver ocupado, a fila mantém apenas o pedido mais recente. Ao fechar a janela, o programa espera a última gravação terminar. Erros de gravação são informados.
 - Ao reabrir, a primeira candidata usa os parâmetros salvos. O estado do gerador de mutações não é salvo, portanto a busca não continua exatamente de onde parou.
 - No treino, N avança para a próxima geração; não há intervenção manual nos saltos.

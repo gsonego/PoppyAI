@@ -178,7 +178,7 @@ class TestCiclo(unittest.TestCase):
 
     def test_rejeita_modelo_antigo(self):
         dados = {
-            "experimento": {"versao": 5, "limite_segundos": LIMITE_TENTATIVA,
+            "experimento": {"versao": 6, "limite_segundos": LIMITE_TENTATIVA,
                             "semente_treino": SEMENTE_TREINO},
             "peso": -1.5, "vies": 0.5, "tempo_segundos": 30,
         }

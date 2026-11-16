@@ -7,7 +7,7 @@ from threading import Condition, Thread
 
 
 # Incremente se mudar a física, observação, política ou geração de obstáculos.
-VERSAO_EXPERIMENTO = 3
+VERSAO_EXPERIMENTO = 4
 
 
 class GravadorCampeao:
@@ -85,18 +85,18 @@ def carregar_campeao(caminho, limite, semente):
         raise ValueError("A campeã salva pertence a outro experimento.")
 
     valores = [dados.get(chave) for chave in (
-        "peso_distancia", "peso_altura", "vies", "tempo_segundos",
+        "peso_distancia", "peso_altura", "peso_largura", "vies", "tempo_segundos",
     )]
     if any(
         type(valor) not in (int, float) or not math.isfinite(valor)
         for valor in valores
     ):
         raise ValueError("A campeã salva contém parâmetros ou tempo inválidos.")
-    peso_distancia, peso_altura, vies, tempo = valores
+    peso_distancia, peso_altura, peso_largura, vies, tempo = valores
     limite_salvo = dados["experimento"]["limite_segundos"]
     if tempo < 0 or (limite_salvo is not None and tempo > limite_salvo):
         raise ValueError("O tempo salvo está fora do limite do experimento.")
-    return (peso_distancia, peso_altura, vies), tempo
+    return (peso_distancia, peso_altura, peso_largura, vies), tempo
 
 
 def salvar_campeao(caminho, parametros, tempo, limite, semente):
@@ -109,7 +109,8 @@ def salvar_campeao(caminho, parametros, tempo, limite, semente):
         },
         "peso_distancia": parametros[0],
         "peso_altura": parametros[1],
-        "vies": parametros[2],
+        "peso_largura": parametros[2],
+        "vies": parametros[3],
         "tempo_segundos": tempo,
     }
     # Substituir somente após escrever evita truncar o recorde anterior.

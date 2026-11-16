@@ -7,7 +7,7 @@ import pygame
 from ambiente import Ambiente
 from avaliacao import Avaliacao
 from campeao import GravadorCampeao
-from config import FPS, SEMENTE_TREINO
+from config import FPS, PAUSA_COLISAO_MS, SEMENTE_TREINO
 from humano import JogoHumano
 from interface import OPCOES_MENU, RecursosInterface, botoes_menu, desenhar, desenhar_menu
 from janela import criar_janela, posicao_logica, tratar_redimensionamento
@@ -57,6 +57,7 @@ def jogar(tela, recursos, relogio, modo, semente):
         ambiente = Ambiente(semente)
         pygame.display.set_caption(f"PoppyAI — {modo}")
         detalhes = False
+        reiniciar_em = None
         while True:
             relogio.tick(FPS)
             if gravador is not None:
@@ -71,6 +72,7 @@ def jogar(tela, recursos, relogio, modo, semente):
                     if evento.key == pygame.K_TAB and modo != "humano":
                         detalhes = not detalhes
                     if evento.key == pygame.K_r:
+                        reiniciar_em = None
                         if modo == "treino":
                             sessao.registrar_progresso(ambiente, forcar=True)
                             ambiente.reiniciar_manualmente()
@@ -82,17 +84,25 @@ def jogar(tela, recursos, relogio, modo, semente):
                     if evento.key == pygame.K_SPACE and modo in ("treino", "humano"):
                         ambiente.pular_manualmente()
 
-            if modo == "treino" or not sessao.concluida:
+            if modo == "treino" and ambiente.fim_de_jogo:
+                if pygame.time.get_ticks() >= reiniciar_em:
+                    sessao.concluir_tentativa(ambiente)
+                    ambiente.reiniciar(SEMENTE_TREINO)
+                    reiniciar_em = None
+            elif modo == "treino" or not sessao.concluida:
                 pedir_salto = False
                 if modo != "humano":
                     pedir_salto = decidir_salto(
-                        ambiente.distancia, ambiente.obstaculo.height, sessao.parametros,
+                        ambiente.distancia, ambiente.obstaculo.height,
+                        ambiente.obstaculo.width, sessao.parametros,
                     )
                 ambiente.avancar(pedir_salto)
                 if sessao.terminou(ambiente):
-                    sessao.concluir_tentativa(ambiente)
                     if modo == "treino":
-                        ambiente.reiniciar(SEMENTE_TREINO)
+                        sessao.registrar_progresso(ambiente, forcar=True)
+                        reiniciar_em = pygame.time.get_ticks() + PAUSA_COLISAO_MS
+                    else:
+                        sessao.concluir_tentativa(ambiente)
                 elif modo == "treino":
                     sessao.registrar_progresso(ambiente)
             desenhar(tela, recursos, ambiente, sessao, modo, detalhes)

@@ -1,0 +1,69 @@
+"""Animação visual determinística e transições entre corrida, salto e colisão."""
+
+import os
+from types import SimpleNamespace
+import unittest
+from unittest.mock import patch
+
+import pygame
+
+from ambiente import Ambiente
+from art.animacao_poppy import quadro_corrida
+from config import PASSO, VELOCIDADE_OBSTACULO
+from interface import RecursosInterface, desenhar
+
+
+class TestAnimacao(unittest.TestCase):
+    def setUp(self):
+        ambiente = patch.dict(os.environ, {"SDL_VIDEODRIVER": "dummy", "SDL_AUDIODRIVER": "dummy"})
+        ambiente.start()
+        self.addCleanup(ambiente.stop)
+        pygame.init()
+        self.addCleanup(pygame.quit)
+        self.tela = pygame.display.set_mode((900, 400))
+        self.recursos = RecursosInterface()
+
+    def test_quatro_poses_distintas_com_mesmo_tamanho_e_alpha(self):
+        quadros = [self.recursos.sprite_corrida(76, indice) for indice in range(4)]
+        self.assertEqual(len({quadro.get_size() for quadro in quadros}), 1)
+        self.assertEqual(len({pygame.image.tostring(quadro, "RGBA") for quadro in quadros}), 4)
+        for quadro in quadros:
+            self.assertEqual(quadro.get_at((0, 0)).a, 0)
+        self.assertIs(self.recursos.sprite_corrida(76, 0), quadros[0])
+
+    def test_ciclo_depende_da_distancia_e_se_repete(self):
+        self.assertEqual([quadro_corrida(d) for d in (0, 31, 32, 64, 96, 128)], [0, 0, 1, 2, 3, 0])
+        for distancia in (10.5, 40.5, 200):
+            self.assertEqual(quadro_corrida(distancia), quadro_corrida(distancia + 128))
+
+    def test_distancia_acompanha_mundo_para_na_morte_e_zera_ao_reiniciar(self):
+        ambiente = Ambiente(123)
+        for _ in range(10):
+            ambiente.avancar(False)
+        self.assertAlmostEqual(ambiente.distancia_percorrida, 10 * VELOCIDADE_OBSTACULO * PASSO)
+        anterior = ambiente.distancia_percorrida
+        ambiente.fim_de_jogo = True
+        ambiente.avancar(False)
+        self.assertEqual(ambiente.distancia_percorrida, anterior)
+        ambiente.reiniciar(123)
+        self.assertEqual(ambiente.distancia_percorrida, 0)
+
+    def test_salto_mantem_pose_e_colisao_interrompe_corrida(self):
+        ambiente = Ambiente(123)
+        ambiente.no_chao = False
+        sessao = SimpleNamespace(melhor_tempo=0)
+        with patch.object(self.recursos, "sprite_corrida", wraps=self.recursos.sprite_corrida) as corrida, \
+                patch.object(self.recursos, "sprite", wraps=self.recursos.sprite) as parada:
+            for distancia in (0, 64, 96):
+                ambiente.distancia_percorrida = distancia
+                desenhar(self.tela, self.recursos, ambiente, sessao, "humano")
+                corrida.assert_called_with(76, 1)
+            corrida.reset_mock()
+            ambiente.fim_de_jogo = True
+            desenhar(self.tela, self.recursos, ambiente, sessao, "humano")
+            corrida.assert_not_called()
+            parada.assert_called_with(76, atingida=True)
+
+
+if __name__ == "__main__":
+    unittest.main()

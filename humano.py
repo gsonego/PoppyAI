@@ -4,8 +4,7 @@ import json
 import math
 from pathlib import Path
 
-from campeao import VERSAO_EXPERIMENTO
-from config import ARQUIVO_RECORDE_HUMANO, SEMENTE_TREINO
+from config import ARQUIVO_RECORDE_HUMANO, SEMENTE_TREINO, VERSAO_JOGO
 
 
 class JogoHumano:
@@ -24,7 +23,7 @@ class JogoHumano:
 
     @staticmethod
     def _experimento():
-        return {"versao": VERSAO_EXPERIMENTO, "semente": SEMENTE_TREINO}
+        return {"versao": VERSAO_JOGO, "semente": SEMENTE_TREINO}
 
     def terminou(self, ambiente):
         return ambiente.fim_de_jogo

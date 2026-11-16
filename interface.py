@@ -5,6 +5,7 @@ from pathlib import Path
 import pygame
 
 from art.cenario import CREME, ROSA, TINTA, terreno
+from art.animacao_poppy import carregar_corrida, quadro_corrida
 from art.fonte_pixel import FontePixel
 from config import ALTURA, CHAO_Y, LARGURA
 from janela import apresentar
@@ -25,13 +26,26 @@ class RecursosInterface:
         caminho = Path(__file__).resolve().parent / "art" / "source" / "poppy-aprovada.png"
         imagem = pygame.image.load(caminho).convert_alpha()
         self.poppy = imagem.subsurface(imagem.get_bounding_rect(min_alpha=128))
+        imagem_atingida = pygame.image.load(caminho.with_name("poppy-atingida.png")).convert_alpha()
+        self.poppy_atingida = imagem_atingida.subsurface(imagem_atingida.get_bounding_rect(min_alpha=128))
+        self.corrida = carregar_corrida(caminho.with_name("poppy-corrida-proposta.png"))
         self._sprites = {}
 
-    def sprite(self, altura):
-        if altura not in self._sprites:
+    def sprite_corrida(self, altura, indice):
+        chave = ("corrida", altura, indice)
+        if chave not in self._sprites:
+            quadro = self.corrida[indice]
+            tamanho = (round(quadro.get_width() * altura / quadro.get_height()), altura)
+            self._sprites[chave] = pygame.transform.scale(quadro, tamanho)
+        return self._sprites[chave]
+
+    def sprite(self, altura, atingida=False):
+        chave = (altura, atingida)
+        if chave not in self._sprites:
             tamanho = (round(self.poppy.get_width() * altura / self.poppy.get_height()), altura)
-            self._sprites[altura] = pygame.transform.scale(self.poppy, tamanho)
-        return self._sprites[altura]
+            imagem = self.poppy_atingida if atingida else self.poppy
+            self._sprites[chave] = pygame.transform.scale(imagem, tamanho)
+        return self._sprites[chave]
 
     def texto(self, tela, conteudo, x, y, cor=TINTA, escala=2):
         tela.blit(self.fonte.render(conteudo, tuple(pygame.Color(cor)), escala), (x, y))
@@ -74,19 +88,20 @@ def desenhar_caixa(tela, retangulo):
 
 
 def desenhar_decisao(tela, recursos, ambiente, sessao, modo):
-    peso_distancia, peso_altura, vies = sessao.parametros
+    peso_distancia, peso_altura, peso_largura, vies = sessao.parametros
     altura = ambiente.obstaculo.height
-    limiar = limiar_salto(altura, sessao.parametros)
-    pedido = decidir_salto(ambiente.distancia, altura, sessao.parametros)
+    largura = ambiente.obstaculo.width
+    limiar = limiar_salto(altura, largura, sessao.parametros)
+    pedido = decidir_salto(ambiente.distancia, altura, largura, sessao.parametros)
     if peso_distancia == 0:
-        regra = "PEDIDO INDEPENDE DA DISTANCIA NESTA ALTURA"
+        regra = "PEDIDO INDEPENDE DA DISTANCIA NESTE CONJUNTO"
     elif limiar is None:
         regra = "LIMIAR FORA DA ESCALA DE EXIBICAO"
     else:
         sentido = "ABAIXO" if peso_distancia < 0 else "ACIMA"
-        regra = f"SALTA {sentido} DE {limiar:.1f} PX NESTA ALTURA"
+        regra = f"SALTA {sentido} DE {limiar:.1f} PX NESTE CONJUNTO"
     linhas = [
-        f"PESO DIST {peso_distancia:+.4f} / PESO ALT {peso_altura:+.4f} / VIES {vies:+.4f}",
+        f"PESO DIST {peso_distancia:+.4f} / PESO ALT {peso_altura:+.4f} / PESO LARG {peso_largura:+.4f} / VIES {vies:+.4f}",
         f"DIST {ambiente.distancia} PX / ALT {altura} PX / LARG {ambiente.obstaculo.width} PX / {'SALTAR' if pedido else 'ESPERAR'}",
         regra,
     ]
@@ -113,7 +128,12 @@ def desenhar(tela, recursos, ambiente, sessao, modo="treino", detalhes=False):
     for caixa in ambiente.caixas:
         desenhar_caixa(tela, caixa)
     # Orelhas e cauda são decorativas; o retângulo da física é preservado.
-    sprite = recursos.sprite(76)
+    if ambiente.fim_de_jogo:
+        sprite = recursos.sprite(76, atingida=True)
+    else:
+        # No ar, mantém uma pose com as patas recolhidas até o pouso.
+        indice = quadro_corrida(ambiente.distancia_percorrida) if ambiente.no_chao else 1
+        sprite = recursos.sprite_corrida(76, indice)
     tela.blit(sprite, sprite.get_rect(midbottom=ambiente.personagem.midbottom))
     recursos.texto(tela, "POPPY", 24, 22, escala=3)
     recursos.texto(tela, ".AI", 116, 24, ROSA)
@@ -144,7 +164,7 @@ def desenhar(tela, recursos, ambiente, sessao, modo="treino", detalhes=False):
         recursos.texto(tela, "TAB FECHAR IA" if detalhes else "TAB DETALHES IA", 710, 380, escala=1)
     if detalhes and modo != "humano":
         desenhar_decisao(tela, recursos, ambiente, sessao, modo)
-    if ambiente.fim_de_jogo:
+    if ambiente.fim_de_jogo and modo != "treino":
         pygame.draw.rect(tela, TINTA, (300, 222, 372, 66))
         recursos.texto(tela, "FIM DE JOGO", 326, 234, CREME)
         recursos.texto(tela, "R PARA REPETIR / ESC MENU", 326, 264, CREME, 1)

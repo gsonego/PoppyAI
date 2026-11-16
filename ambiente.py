@@ -64,6 +64,7 @@ class Ambiente:
         self.obstaculo_x = float(LARGURA)
         self.obstaculo.x = round(self.obstaculo_x)
         self.tempo_vivo = 0.0
+        self.distancia_percorrida = 0.0
         self.fim_de_jogo = False
 
     def reiniciar(self, semente):
@@ -102,7 +103,9 @@ class Ambiente:
             self.no_chao = True
         self.personagem.y = round(self.posicao_y)
 
-        self.obstaculo_x -= VELOCIDADE_OBSTACULO * PASSO
+        deslocamento = VELOCIDADE_OBSTACULO * PASSO
+        self.distancia_percorrida += deslocamento
+        self.obstaculo_x -= deslocamento
         self.obstaculo.x = round(self.obstaculo_x)
         if self.obstaculo.right < 0:
             self._sortear_obstaculo()

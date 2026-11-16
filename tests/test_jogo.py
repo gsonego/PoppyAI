@@ -12,8 +12,10 @@ from unittest.mock import patch
 import pygame
 
 import main
+from ambiente import Ambiente
 from humano import JogoHumano
-from interface import RecursosInterface, desenhar_menu, formatar_tempo
+from interface import RecursosInterface, desenhar, desenhar_menu, formatar_tempo
+from treino import Treino
 from janela import apresentar, area_conteudo, criar_janela, posicao_logica, tratar_redimensionamento
 
 
@@ -136,7 +138,7 @@ class TestJogo(unittest.TestCase):
         self.assertEqual(pygame.display.get_surface().get_size(), tamanho)
 
     def test_tab_alterna_detalhes_sem_mudar_parametros(self):
-        sessao = SimpleNamespace(concluida=False, parametros=(-1.5, 0.7, 0.5), recorde_treino=30,
+        sessao = SimpleNamespace(concluida=False, parametros=(-1.5, 0.7, 0.2, 0.5), recorde_treino=30,
                                  terminou=lambda ambiente: False)
         eventos = [[tecla(pygame.K_TAB)], [tecla(pygame.K_TAB)], [pygame.event.Event(pygame.QUIT)]]
         detalhes = []
@@ -145,11 +147,53 @@ class TestJogo(unittest.TestCase):
                 patch("main.desenhar", side_effect=lambda *args: detalhes.append(args[-1])):
             main.main("avaliacao")
         self.assertEqual(detalhes, [True, False])
-        self.assertEqual(sessao.parametros, (-1.5, 0.7, 0.5))
+        self.assertEqual(sessao.parametros, (-1.5, 0.7, 0.2, 0.5))
 
     def test_relogio_mostra_horas_sem_voltar_a_zero(self):
         self.assertEqual(formatar_tempo(65), "01:05")
         self.assertEqual(formatar_tempo(3665), "1:01:05")
+
+    def test_colisao_seleciona_sprite_vermelho_e_reinicio_volta_ao_normal(self):
+        pygame.init()
+        tela = pygame.display.set_mode((900, 400))
+        recursos = RecursosInterface()
+        ambiente = Ambiente(123)
+        sessao = JogoHumano(self.caminho)
+        with patch.object(recursos, "sprite", wraps=recursos.sprite) as sprite, \
+                patch.object(recursos, "sprite_corrida", wraps=recursos.sprite_corrida) as corrida:
+            ambiente.fim_de_jogo = True
+            desenhar(tela, recursos, ambiente, sessao, "humano")
+            sprite.assert_called_with(76, atingida=True)
+            corrida.assert_not_called()
+            sprite.reset_mock()
+            ambiente.reiniciar(123)
+            desenhar(tela, recursos, ambiente, sessao, "humano")
+            sprite.assert_not_called()
+            corrida.assert_called_with(76, 0)
+        self.assertEqual(recursos.sprite(76).get_size(), recursos.sprite(76, True).get_size())
+        self.assertIsNot(recursos.sprite(76), recursos.sprite(76, True))
+
+    def test_treino_exibe_colisao_sem_avancar_tempo_antes_de_reiniciar(self):
+        class AmbienteComColisao(Ambiente):
+            def avancar(self, pedir_salto):
+                self.tempo_vivo = 2.0
+                self.fim_de_jogo = True
+
+        estados = []
+        eventos = [[] for _ in range(5)] + [[pygame.event.Event(pygame.QUIT)]]
+        with contextlib.redirect_stdout(io.StringIO()):
+            treino = Treino(Path(self.pasta.name) / "campeao.json")
+            with patch("main.Treino", return_value=treino), \
+                    patch("main.Ambiente", AmbienteComColisao), \
+                    patch("main.pygame.time.Clock"), \
+                    patch("main.pygame.time.get_ticks", side_effect=[1000, 1100, 1300, 1449, 1450]), \
+                    patch("main.pygame.event.get", side_effect=eventos), \
+                    patch("main.desenhar", side_effect=lambda tela, recursos, ambiente, sessao, *args:
+                          estados.append((ambiente.fim_de_jogo, ambiente.tempo_vivo, sessao.tentativa))):
+                main.main("treino")
+        self.assertEqual(estados[:4], [(True, 2.0, 1)] * 4)
+        self.assertEqual(estados[4], (False, 0.0, 2))
+        self.assertEqual(treino.melhor_tempo, 2.0)
 
 
 if __name__ == "__main__":

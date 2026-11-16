@@ -1,6 +1,6 @@
 # PoppyAI
 
-Experimento de aprendizado com dois nós de entrada (distância e altura do
+Experimento de aprendizado com três nós de entrada (distância, altura e largura do
 obstáculo), um neurônio de saída e busca evolutiva, sem bibliotecas de machine
 learning. A função de ativação é o degrau: pede salto quando `z > 0`.
 
@@ -25,16 +25,26 @@ do mouse são convertidas para que os botões continuem funcionando em qualquer 
 Orelhas e cauda são partes decorativas da arte; `Tab` também mostra o retângulo
 de colisão nos modos da IA.
 
+A corrida usa quatro poses alinhadas, alternadas a cada 32 pixels percorridos
+pelo mundo. Ela acompanha o deslocamento da partida, sem depender do relógio real.
+No salto, as patas ficam recolhidas; na colisão, a corrida para e a Poppy fica
+vermelha. No menu ela permanece parada. Quadros e tamanhos são carregados e
+guardados em memória, sem leitura de imagem a cada quadro. Física, pesos e
+recordes continuam compatíveis.
+
 Durante a partida: `Espaço` salta (humano e treino), `R` reinicia, `Esc` volta
 ao menu e `Tab` abre ou fecha os detalhes da IA (treino e avaliação).
 No modo humano, a colisão mantém o resultado na tela; `R` repete a partida.
+A Poppy fica vermelha ao colidir. No humano e na avaliação, ela permanece assim
+até reiniciar; no treino, a colisão fica visível por 0,45 segundo antes da próxima
+tentativa. Essa pausa não conta no tempo sobrevivido e não bloqueia os controles.
 Seu recorde é salvo em `recorde_humano_caixas_duplas.json` ao morrer, reiniciar, voltar ao menu
 ou fechar a janela. Ele é separado dos pesos e do recorde da IA.
 
 Para entrar diretamente, use `--modo humano`, `--modo treino` ou
 `--modo avaliacao`.
 
-Para observar a campeã salva, com os dois pesos e o viés fixos:
+Para observar a campeã salva, com os três pesos e o viés fixos:
 
 ```powershell
 .\.venv\Scripts\python.exe main.py --modo avaliacao
@@ -43,7 +53,7 @@ Para observar a campeã salva, com os dois pesos e o viés fixos:
 Sem `--modo`, o programa abre o menu.
 Na avaliação, a partida continua até a colisão, sem limite de tempo, e mantém
 o resultado na tela. R repete a mesma sequência desde o início; o salto
-manual fica desativado. Esse modo não gera mutações nem grava em `campeao_caixas_duplas.json`.
+manual fica desativado. Esse modo não gera mutações nem grava em `campeao_largura.json`.
 Se não houver campeã salva, o programa informa que é preciso treinar primeiro.
 
 Para avaliar em outra sequência de obstáculos:
@@ -57,30 +67,39 @@ sequências. O primeiro obstáculo continua igual. A semente aparece nos detalhe
 no terminal, e R reinicia com a semente escolhida. Sem `--semente`, a avaliação
 usa 123. Essa opção é exclusiva da avaliação; o treino continua usando 123.
 
-Nos modos da IA, pressione `Tab` para mostrar os dois pesos, o viés, a distância,
-a altura e o pedido atual da política. As entradas são normalizadas pelas dimensões da janela:
+Nos modos da IA, pressione `Tab` para mostrar os três pesos, o viés, a distância,
+a altura, a largura total do conjunto e o pedido atual da política. As entradas
+são normalizadas pelas dimensões lógicas do jogo:
 
 ```python
-z = peso_distancia * (distancia / LARGURA) + peso_altura * (altura / ALTURA) + vies
+z = (peso_distancia * (distancia / LARGURA)
+     + peso_altura * (altura / ALTURA)
+     + peso_largura * (largura / LARGURA)
+     + vies)
 ```
 
 A marca rosa nos detalhes indica a distância em que a decisão muda, para a altura
-do obstáculo atual:
-`limite = -(peso_altura * (altura / ALTURA) + vies) / peso_distancia * LARGURA`.
+e a largura do conjunto atual:
+`limite = -(peso_altura * (altura / ALTURA) + peso_largura * (largura / LARGURA) + vies) / peso_distancia * LARGURA`.
 Com peso da distância negativo, pede salto abaixo do limite; com positivo,
 acima. No limite exato, não pede salto (`z > 0`, sujeito à precisão numérica).
-Peso da distância zero produz uma decisão que depende apenas da altura e do
+Peso da distância zero produz uma decisão que depende apenas da altura, da largura e do
 viés, sem marca de distância. Limites negativos ou fora da tela continuam
 descritos no texto, sem uma marca visível no chão. O pedido só vira um salto
 quando o personagem está no chão e a distância é não negativa.
 
-O experimento atual é a versão 3, com caixas duplas. Seus pesos ficam em
-`campeao_caixas_duplas.json` e o recorde humano em
-`recorde_humano_caixas_duplas.json`. É necessário treinar uma campeã desta versão
-antes de avaliá-la. Os arquivos anteriores (`campeao.json`, `campeao_altura.json`
-e `recorde_humano.json`) são preservados e não transferem recordes para o novo desafio.
-A IA continua com duas entradas: distância até a frente do conjunto e altura total.
-A largura aparece no painel de detalhes, mas ainda não é uma entrada da política.
+O modelo da IA é a versão 4, com três pesos e um viés, salvo em
+`campeao_largura.json`. É necessário treinar uma campeã desta versão antes de
+avaliá-la. Os arquivos anteriores (`campeao.json`, `campeao_altura.json` e
+`campeao_caixas_duplas.json`) são preservados. O recorde humano continua em
+`recorde_humano_caixas_duplas.json`, com a versão 3 das regras da partida;
+alterar as entradas da IA não invalida esse recorde.
+
+A largura permite aprender um momento de salto diferente para caixas largas.
+A força e a duração do salto continuam fixas: a IA só decide quando pedir o
+salto. Um obstáculo mais largo pode exigir saltar mais perto para não pousar
+antes de ultrapassá-lo. O treino busca os pesos; não há uma regra manual que
+obrigue o peso da largura a ter um sinal específico.
 
 ## Caixas duplas
 
@@ -104,7 +123,7 @@ R recomeça a sequência pela caixa simples inicial.
 | `main.py` | Inicializar o Pygame e coordenar menu, controles e os três modos. |
 | `config.py` | Dimensões, física, passo fixo, sementes, limite e caminho da campeã. |
 | `ambiente.py` | Estado da partida, saltos, obstáculos e colisões. |
-| `politica.py` | Converter distância, altura e parâmetros em um pedido de salto. |
+| `politica.py` | Converter distância, altura, largura e parâmetros em um pedido de salto. |
 | `treino.py` | Pontuar partidas, preservar a melhor configuração e gerar candidatas. |
 | `avaliacao.py` | Carregar a campeã e acompanhar uma partida com parâmetros fixos. |
 | `humano.py` | Acompanhar a partida humana e salvar o recorde pessoal separado. |
@@ -114,7 +133,7 @@ R recomeça a sequência pela caixa simples inicial.
 | `art/cenario.py` | Desenhar o cenário estático em pixel art. |
 | `art/fonte_pixel.py` | Renderizar a fonte bitmap sem fontes externas. |
 
-O fluxo de cada passo é: observar distância e altura → a política pedir ou não um salto → o ambiente executar o passo → o treino verificar se a tentativa acabou → desenhar.
+O fluxo de cada passo é: observar distância, altura e largura → a política pedir ou não um salto → o ambiente executar o passo → o treino verificar se a tentativa acabou → desenhar.
 
 O ambiente não conhece pesos nem mutações. A política não conhece a física. O treino muda os parâmetros somente entre partidas. Essa divisão permite estudar cada conceito e, depois, usar o mesmo ambiente com parâmetros fixos para avaliação.
 
@@ -123,7 +142,7 @@ O ambiente não conhece pesos nem mutações. A política não conhece a física
 - Passo fixo de 1/60 s e tentativas sem limite de tempo: terminam na colisão.
 - No treino, os parâmetros mudam após a colisão. Novos recordes são salvos durante a partida, a cada avanço de aproximadamente um segundo sobre o recorde salvo, e também na colisão, antes de reiniciar, ao voltar ao menu ou ao fechar a janela. Tentativas com intervenção manual não substituem a campeã. Se uma candidata sobreviver indefinidamente, a mesma tentativa continuará rodando e sendo salva enquanto melhora o recorde.
 - Treino sempre na sequência de obstáculos da semente 123.
-- Campeã salva em `campeao_caixas_duplas.json`, ao lado dos arquivos; empates preservam a anterior.
+- Campeã salva em `campeao_largura.json`, ao lado dos arquivos; empates preservam a anterior.
 - Durante o jogo, as gravações ocorrem em uma thread separada para não bloquear os quadros. Se o disco estiver ocupado, a fila mantém apenas o pedido mais recente. Ao fechar a janela, o programa espera a última gravação terminar. Erros de gravação são informados.
 - Ao reabrir, a primeira candidata usa os parâmetros salvos. O estado do gerador de mutações não é salvo, portanto a busca não continua exatamente de onde parou.
 - No treino, Espaço permite salto manual e R reposiciona o jogo. Tentativas com intervenção manual não entram no recorde. R mantém o tamanho e a sequência atuais dos obstáculos, como na versão anterior.

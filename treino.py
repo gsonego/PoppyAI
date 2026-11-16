@@ -55,19 +55,28 @@ class Treino:
     def terminou(self, ambiente):
         return ambiente.fim_de_jogo
 
+    def registrar_progresso(self, ambiente, forcar=False):
+        """Salva novos recordes sem encerrar a tentativa ou mudar os parâmetros."""
+        pontuacao = ambiente.tempo_vivo
+        if ambiente.tentativa_manual or pontuacao <= self.melhor_tempo:
+            return False
+        # Durante a partida, evita escrever no disco a cada quadro.
+        if not forcar and pontuacao < max(0.0, self.melhor_tempo) + 1.0:
+            return False
+        try:
+            salvar_campeao(
+                self.caminho, self.parametros, pontuacao,
+                LIMITE_TENTATIVA, SEMENTE_TREINO,
+            )
+        except (OSError, ValueError) as erro:
+            raise SystemExit(f"Não foi possível salvar a campeã: {erro}")
+        self.melhor_tempo = pontuacao
+        self.melhores_parametros = self.parametros
+        return True
+
     def concluir_tentativa(self, ambiente):
         pontuacao = ambiente.tempo_vivo
-        melhorou = not ambiente.tentativa_manual and pontuacao > self.melhor_tempo
-        if melhorou:
-            self.melhor_tempo = pontuacao
-            self.melhores_parametros = self.parametros
-            try:
-                salvar_campeao(
-                    self.caminho, self.melhores_parametros, self.melhor_tempo,
-                    LIMITE_TENTATIVA, SEMENTE_TREINO,
-                )
-            except (OSError, ValueError) as erro:
-                raise SystemExit(f"Não foi possível salvar a campeã: {erro}")
+        melhorou = self.registrar_progresso(ambiente, forcar=True)
 
         print(
             f"Tentativa {self.tentativa}: {pontuacao:.2f}s "

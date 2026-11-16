@@ -76,7 +76,7 @@ O ambiente não conhece pesos nem mutações. A política não conhece a física
 ## Experimento atual
 
 - Passo fixo de 1/60 s e tentativas sem limite de tempo: terminam na colisão.
-- No treino, os parâmetros mudam e a campeã é salva após a colisão. Se uma candidata sobreviver indefinidamente, a mesma tentativa continuará rodando. Fechar a janela não conclui nem salva a tentativa atual.
+- No treino, os parâmetros mudam após a colisão. Novos recordes são salvos durante a partida, a cada avanço de aproximadamente um segundo sobre o recorde salvo, e também na colisão ou ao fechar a janela. Tentativas com intervenção manual não substituem a campeã. Se uma candidata sobreviver indefinidamente, a mesma tentativa continuará rodando e sendo salva enquanto melhora o recorde.
 - Treino sempre na sequência de obstáculos da semente 123.
 - Campeã salva em `campeao_altura.json`, ao lado dos arquivos; empates preservam a anterior.
 - Ao reabrir, a primeira candidata usa os parâmetros salvos. O estado do gerador de mutações não é salvo, portanto a busca não continua exatamente de onde parou.

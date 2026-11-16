@@ -42,6 +42,8 @@ def main(modo="treino", semente=None):
                         ambiente.pular_manualmente()
 
             if not executando:
+                if modo == "treino":
+                    sessao.registrar_progresso(ambiente, forcar=True)
                 break
             if modo == "treino" or not sessao.concluida:
                 pedir_salto = decidir_salto(
@@ -52,6 +54,8 @@ def main(modo="treino", semente=None):
                     sessao.concluir_tentativa(ambiente)
                     if modo == "treino":
                         ambiente.reiniciar(SEMENTE_TREINO)
+                elif modo == "treino":
+                    sessao.registrar_progresso(ambiente)
             desenhar(tela, fonte, ambiente, sessao, modo)
     finally:
         pygame.quit()

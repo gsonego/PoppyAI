@@ -3,10 +3,15 @@
 import contextlib
 import io
 import json
+import os
 from pathlib import Path
 import tempfile
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
+
+import pygame
+import main
 
 from ambiente import Ambiente
 from avaliacao import Avaliacao
@@ -97,6 +102,45 @@ class TestCiclo(unittest.TestCase):
         self.assertEqual(self.caminho.read_bytes(), original)
         with self.assertRaises(ValueError):
             carregar_campeao(self.caminho, None, SEMENTE_TREINO + 1)
+
+    def test_salva_progresso_sem_mudar_candidata_e_ignora_intervencao(self):
+        with contextlib.redirect_stdout(io.StringIO()):
+            treino = Treino(self.caminho)
+            parametros = treino.parametros
+            ambiente = SimpleNamespace(tempo_vivo=65.0, tentativa_manual=False)
+            self.assertTrue(treino.registrar_progresso(ambiente))
+            self.assertEqual(treino.parametros, parametros)
+            self.assertEqual(treino.tentativa, 1)
+            self.assertEqual(carregar_campeao(self.caminho, None, SEMENTE_TREINO),
+                             (parametros, 65.0))
+            ambiente.tempo_vivo = 65.5
+            self.assertFalse(treino.registrar_progresso(ambiente))
+            self.assertTrue(treino.registrar_progresso(ambiente, forcar=True))
+            original = self.caminho.read_bytes()
+            ambiente.tempo_vivo = 100
+            ambiente.tentativa_manual = True
+            self.assertFalse(treino.registrar_progresso(ambiente, forcar=True))
+            ambiente.tentativa_manual = False
+            ambiente.tempo_vivo = 10
+            self.assertFalse(treino.registrar_progresso(ambiente, forcar=True))
+            self.assertEqual(self.caminho.read_bytes(), original)
+
+    def test_fechar_janela_salva_candidata_viva_e_reabertura_carrega(self):
+        with contextlib.redirect_stdout(io.StringIO()):
+            treino = Treino(self.caminho)
+            parametros = treino.parametros
+            # Fecha antes do primeiro salvamento periódico (menos de 1 s).
+            eventos = [[] for _ in range(30)] + [[pygame.event.Event(pygame.QUIT)]]
+            with patch.dict(os.environ, {"SDL_VIDEODRIVER": "dummy", "SDL_AUDIODRIVER": "dummy"}), \
+                    patch("main.Treino", return_value=treino), \
+                    patch("main.pygame.time.Clock"), \
+                    patch("main.pygame.event.get", side_effect=eventos), \
+                    patch("main.desenhar"):
+                main.main()
+            self.assertEqual(treino.tentativa, 1)
+            reaberto = Treino(self.caminho)
+            self.assertEqual(reaberto.parametros, parametros)
+            self.assertAlmostEqual(reaberto.melhor_tempo, 0.5)
 
     def test_rejeita_tempo_negativo_sem_teto(self):
         salvar_campeao(self.caminho, (-1.5, 0.1, 0.5), -1, None, SEMENTE_TREINO)

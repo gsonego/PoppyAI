@@ -3,10 +3,65 @@
 import json
 import math
 from pathlib import Path
+from threading import Condition, Thread
 
 
 # Incremente se mudar a física, observação, política ou geração de obstáculos.
 VERSAO_EXPERIMENTO = 2
+
+
+class GravadorCampeao:
+    """Uma única thread grava no disco, mantendo só o pedido mais recente na fila."""
+
+    def __init__(self):
+        self._condicao = Condition()
+        self._pendente = None
+        self._erro = None
+        self._fechado = False
+        self._thread = None
+
+    def verificar_erro(self):
+        with self._condicao:
+            erro = self._erro
+        if erro is not None:
+            raise OSError(f"Não foi possível salvar a campeã: {erro}") from erro
+
+    def agendar(self, caminho, parametros, tempo, limite, semente):
+        with self._condicao:
+            self.verificar_erro()
+            if self._fechado:
+                raise RuntimeError("O gravador já foi fechado.")
+            # Copia os parâmetros: o treino pode trocar de candidata antes da gravação.
+            self._pendente = (Path(caminho), tuple(parametros), tempo, limite, semente)
+            if self._thread is None:
+                self._thread = Thread(target=self._gravar, name="salvar-campeao", daemon=True)
+                self._thread.start()
+            self._condicao.notify()
+
+    def _gravar(self):
+        while True:
+            with self._condicao:
+                self._condicao.wait_for(lambda: self._pendente is not None or self._fechado)
+                if self._pendente is None:
+                    return
+                pedido = self._pendente
+                self._pendente = None
+            try:
+                salvar_campeao(*pedido)
+            except Exception as erro:
+                with self._condicao:
+                    self._erro = erro
+                    self._pendente = None
+                return
+
+    def fechar(self):
+        """Espera a última gravação antes de encerrar o programa."""
+        with self._condicao:
+            self._fechado = True
+            self._condicao.notify()
+        if self._thread is not None:
+            self._thread.join()
+        self.verificar_erro()
 
 
 def carregar_campeao(caminho, limite, semente):

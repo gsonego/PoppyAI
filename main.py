@@ -6,6 +6,7 @@ import pygame
 
 from ambiente import Ambiente
 from avaliacao import Avaliacao
+from campeao import GravadorCampeao
 from config import ALTURA, FPS, LARGURA, SEMENTE_TREINO
 from interface import desenhar
 from politica import decidir_salto
@@ -16,9 +17,10 @@ def main(modo="treino", semente=None):
     if modo == "treino" and semente is not None:
         raise ValueError("--semente só pode ser usada no modo avaliacao.")
     semente_partida = SEMENTE_TREINO if semente is None else semente
+    gravador = GravadorCampeao() if modo == "treino" else None
     pygame.init()
     try:
-        sessao = Treino() if modo == "treino" else Avaliacao(semente=semente_partida)
+        sessao = Treino(salvar=gravador.agendar) if modo == "treino" else Avaliacao(semente=semente_partida)
         ambiente = Ambiente(semente_partida)
         tela = pygame.display.set_mode((LARGURA, ALTURA))
         pygame.display.set_caption(f"PoppyAI — {modo}")
@@ -28,6 +30,8 @@ def main(modo="treino", semente=None):
 
         while executando:
             relogio.tick(FPS)
+            if gravador is not None:
+                gravador.verificar_erro()
             for evento in pygame.event.get():
                 if evento.type == pygame.QUIT:
                     executando = False
@@ -58,7 +62,11 @@ def main(modo="treino", semente=None):
                     sessao.registrar_progresso(ambiente)
             desenhar(tela, fonte, ambiente, sessao, modo)
     finally:
-        pygame.quit()
+        try:
+            if gravador is not None:
+                gravador.fechar()
+        finally:
+            pygame.quit()
 
 
 if __name__ == "__main__":

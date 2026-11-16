@@ -9,8 +9,9 @@ from config import (
 
 
 class Treino:
-    def __init__(self, caminho=ARQUIVO_CAMPEAO):
+    def __init__(self, caminho=ARQUIVO_CAMPEAO, salvar=salvar_campeao):
         self.caminho = caminho
+        self._salvar = salvar
         self.sorteio = random.Random(SEMENTE_PARAMETROS)
         self.parametros = self._sortear_parametros()
         self.melhores_parametros = None
@@ -64,7 +65,7 @@ class Treino:
         if not forcar and pontuacao < max(0.0, self.melhor_tempo) + 1.0:
             return False
         try:
-            salvar_campeao(
+            self._salvar(
                 self.caminho, self.parametros, pontuacao,
                 LIMITE_TENTATIVA, SEMENTE_TREINO,
             )

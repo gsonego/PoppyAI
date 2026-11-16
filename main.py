@@ -107,7 +107,7 @@ def jogar(tela, recursos, relogio, modo, semente):
                 if modo == "avaliacao":
                     pedir_salto = decidir_salto(
                         ambiente.distancia, ambiente.obstaculo.height,
-                        ambiente.obstaculo.width, sessao.parametros,
+                        ambiente.obstaculo.width, ambiente.velocidade, sessao.parametros,
                     )
                 ambiente.avancar(pedir_salto)
                 if sessao.terminou(ambiente):

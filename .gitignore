@@ -2,3 +2,6 @@
 __pycache__/
 *.py[cod]
 .codex-attachments
+
+# Pesos e recordes das campeãs são dados locais do treino.
+/dados/campeoes/

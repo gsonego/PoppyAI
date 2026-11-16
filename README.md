@@ -1,6 +1,6 @@
 # PoppyAI
 
-Experimento de aprendizado com três nós de entrada (distância, altura e largura do
+Experimento de aprendizado com quatro nós de entrada (distância, altura, largura e velocidade do
 obstáculo), um neurônio de saída e busca evolutiva, sem bibliotecas de machine
 learning. A função de ativação é o degrau: pede salto quando `z > 0`.
 
@@ -41,13 +41,13 @@ ao menu e `Tab` abre ou fecha os detalhes da IA (treino e avaliação).
 No modo humano, a colisão mantém o resultado na tela; `R` repete a partida.
 A Poppy fica vermelha ao colidir no humano e na avaliação e permanece assim
 até reiniciar. No treino, cada Poppy que colide é removida junto com sua linha.
-Seu recorde é salvo em `recorde_humano_colisao.json` ao morrer, reiniciar, voltar ao menu
+Seu recorde é salvo em `recorde_humano_velocidade.json` ao morrer, reiniciar, voltar ao menu
 ou fechar a janela. Ele é separado dos pesos e do recorde da IA.
 
 Para entrar diretamente, use `--modo humano`, `--modo treino` ou
 `--modo avaliacao`.
 
-Para observar a campeã salva, com os três pesos e o viés fixos:
+Para observar a campeã salva, com os quatro pesos e o viés fixos:
 
 ```powershell
 .\.venv\Scripts\python.exe main.py --modo avaliacao
@@ -56,7 +56,7 @@ Para observar a campeã salva, com os três pesos e o viés fixos:
 Sem `--modo`, o programa abre o menu.
 Na avaliação, a partida continua até a colisão, sem limite de tempo, e mantém
 o resultado na tela. R repete a mesma sequência desde o início; o salto
-manual fica desativado. Esse modo não gera mutações nem grava em `campeao_colisao.json`.
+manual fica desativado. Esse modo não gera mutações nem grava em `dados/campeoes/campeao_velocidade.json`.
 Se não houver campeã salva, o programa informa que é preciso treinar primeiro.
 
 Para avaliar em outra sequência de obstáculos:
@@ -70,35 +70,40 @@ sequências. O primeiro obstáculo continua igual. A semente aparece nos detalhe
 no terminal, e R reinicia com a semente escolhida. Sem `--semente`, a avaliação
 usa 123. Essa opção é exclusiva da avaliação; o treino continua usando 123.
 
-Nos modos da IA, pressione `Tab` para mostrar os três pesos, o viés, a distância,
-a altura, a largura total do conjunto e o pedido atual da política. As entradas
-são normalizadas pelas dimensões lógicas do jogo:
+Nos modos da IA, pressione `Tab` para mostrar os quatro pesos, o viés, a distância,
+a altura, a largura total do conjunto, a velocidade e o pedido atual da política.
+Distância e largura são divididas pela largura lógica da janela, altura pela
+altura lógica e velocidade por `VELOCIDADE_MAXIMA`:
 
 ```python
 z = (peso_distancia * (distancia / LARGURA)
      + peso_altura * (altura / ALTURA)
      + peso_largura * (largura / LARGURA)
+     + peso_velocidade * (velocidade / VELOCIDADE_MAXIMA)
      + vies)
 ```
 
 A marca rosa nos detalhes indica a distância em que a decisão muda, para a altura
-e a largura do conjunto atual:
-`limite = -(peso_altura * (altura / ALTURA) + peso_largura * (largura / LARGURA) + vies) / peso_distancia * LARGURA`.
+a largura e a velocidade do conjunto atual:
+`limite = -(peso_altura * (altura / ALTURA) + peso_largura * (largura / LARGURA) + peso_velocidade * (velocidade / VELOCIDADE_MAXIMA) + vies) / peso_distancia * LARGURA`.
 Com peso da distância negativo, pede salto abaixo do limite; com positivo,
 acima. No limite exato, não pede salto (`z > 0`, sujeito à precisão numérica).
-Peso da distância zero produz uma decisão que depende apenas da altura, da largura e do
+Peso da distância zero produz uma decisão que depende apenas da altura, da largura, da velocidade e do
 viés, sem marca de distância. Limites negativos ou fora da tela continuam
 descritos no texto, sem uma marca visível no chão. O pedido só vira um salto
 quando o personagem está no chão e a distância é não negativa.
 
-O modelo da IA é a versão 5, com três pesos e um viés, salvo em
-`campeao_colisao.json`. As regras da partida são a versão 4, com o recorde pessoal
-em `recorde_humano_colisao.json`. A colisão maior muda o desafio: é necessário
-novo treino e novos recordes. Os arquivos anteriores (`campeao.json`,
-`campeao_altura.json`, `campeao_caixas_duplas.json`, `campeao_largura.json` e
-os recordes humanos anteriores) são preservados. As forças do salto e a
-velocidade continuam iguais, e os maiores obstáculos permanecem ultrapassáveis.
+O modelo da IA é a versão 6, com quatro pesos e um viés, salvo em
+`dados/campeoes/campeao_velocidade.json`. As regras da partida são a versão 5,
+com o recorde pessoal em `recorde_humano_velocidade.json`. A aceleração muda o
+desafio: é necessário novo treino e novos recordes. As campeãs anteriores foram
+preservadas em `dados/campeoes/`, sem reaproveitar suas pontuações no novo modelo.
+As forças do salto continuam iguais e os maiores obstáculos permanecem ultrapassáveis.
 
+A pasta `dados/campeoes/` é criada automaticamente no primeiro salvamento e é
+ignorada pelo Git. Os arquivos das campeãs que eram versionados foram retirados
+do índice; o próximo commit remove-os da versão atual do repositório. Isso não
+apaga os arquivos publicados em commits antigos.
 A largura permite aprender um momento de salto diferente para caixas largas.
 A força e a duração do salto continuam fixas: a IA só decide quando pedir o
 salto. Um obstáculo mais largo pode exigir saltar mais perto para não pousar
@@ -114,11 +119,24 @@ sendo uma caixa simples de 30 × 50. Nos seguintes sorteios, a distribuição é
 - 25%: duas caixas iguais lado a lado, sem vão; largura total de 40 a 80 px.
 - 25%: duas caixas iguais empilhadas; altura total de 60 a 84 px.
 
-A velocidade e a força do salto continuam iguais. As dimensões máximas dos
+A força do salto continua igual. As dimensões máximas dos
 pares foram verificadas com a física atual para que exista um momento de salto
 capaz de ultrapassá-los. A colisão e o sensor usam o retângulo total, preenchido
 pelas duas caixas. No humano e na avaliação, R recomeça a sequência pela caixa
 simples inicial; cada geração do treino também começa nessa mesma sequência.
+
+## Velocidade progressiva
+
+Nos três modos, começa em 350 px/s e aumenta continuamente 2,5 px/s a cada
+segundo sobrevivido (25 px/s a cada 10 segundos), até 650 px/s aos 120 segundos.
+A velocidade aparece no cabeçalho. Reiniciar ou começar uma geração restaura
+350 px/s. As 50 Poppys sobreviventes têm a mesma aceleração, definida pelo tempo
+simulado, independentemente da velocidade de renderização. As patinhas já
+acompanham o deslocamento mais rápido. Não há limite de duração da partida.
+
+A IA recebe a velocidade como quarta entrada para ajustar o momento do salto.
+Os maiores conjuntos de caixas foram testados de 350 a 650 px/s, a cada 25 px/s,
+incluindo a aceleração durante o salto, com a mesma física e colisão do jogo.
 
 ## Treino visual por gerações
 
@@ -161,7 +179,7 @@ não são persistidos: ao reabrir, começa uma geração nova com a campeã salv
 | `art/cenario.py` | Desenhar o cenário estático em pixel art. |
 | `art/fonte_pixel.py` | Renderizar a fonte bitmap sem fontes externas. |
 
-O fluxo de cada passo é: observar distância, altura e largura → a política pedir ou não um salto → o ambiente executar o passo → o treino verificar se a tentativa acabou → desenhar.
+O fluxo de cada passo é: observar distância, altura, largura e velocidade → a política pedir ou não um salto → o ambiente executar o passo → o treino verificar se a tentativa acabou → desenhar.
 
 O ambiente não conhece pesos nem mutações. A política não conhece a física. O treino muda os parâmetros somente entre partidas. Essa divisão permite estudar cada conceito e, depois, usar o mesmo ambiente com parâmetros fixos para avaliação.
 
@@ -170,7 +188,7 @@ O ambiente não conhece pesos nem mutações. A política não conhece a física
 - Passo fixo de 1/60 s e tentativas sem limite de tempo: terminam na colisão.
 - No treino coletivo, os parâmetros mudam entre gerações. Novos recordes são salvos durante a partida, a cada avanço de aproximadamente um segundo sobre o recorde salvo, e também ao encerrar uma geração, voltar ao menu ou fechar a janela.
 - Treino sempre na sequência de obstáculos da semente 123.
-- Campeã salva em `campeao_colisao.json`, ao lado dos arquivos; empates preservam a anterior.
+- Campeã salva em `dados/campeoes/campeao_velocidade.json`, fora do versionamento; empates preservam a anterior.
 - Durante o jogo, as gravações ocorrem em uma thread separada para não bloquear os quadros. Se o disco estiver ocupado, a fila mantém apenas o pedido mais recente. Ao fechar a janela, o programa espera a última gravação terminar. Erros de gravação são informados.
 - Ao reabrir, a primeira candidata usa os parâmetros salvos. O estado do gerador de mutações não é salvo, portanto a busca não continua exatamente de onde parou.
 - No treino, N avança para a próxima geração; não há intervenção manual nos saltos.

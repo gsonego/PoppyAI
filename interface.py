@@ -96,11 +96,11 @@ def desenhar_caixa(tela, retangulo):
 
 
 def desenhar_decisao(tela, recursos, ambiente, sessao, modo, mostrar_sensor=True):
-    peso_distancia, peso_altura, peso_largura, vies = sessao.parametros
+    peso_distancia, peso_altura, peso_largura, peso_velocidade, vies = sessao.parametros
     altura = ambiente.obstaculo.height
     largura = ambiente.obstaculo.width
-    limiar = limiar_salto(altura, largura, sessao.parametros)
-    pedido = decidir_salto(ambiente.distancia, altura, largura, sessao.parametros)
+    limiar = limiar_salto(altura, largura, ambiente.velocidade, sessao.parametros)
+    pedido = decidir_salto(ambiente.distancia, altura, largura, ambiente.velocidade, sessao.parametros)
     if peso_distancia == 0:
         regra = "PEDIDO INDEPENDE DA DISTANCIA NESTE CONJUNTO"
     elif limiar is None:
@@ -109,7 +109,7 @@ def desenhar_decisao(tela, recursos, ambiente, sessao, modo, mostrar_sensor=True
         sentido = "ABAIXO" if peso_distancia < 0 else "ACIMA"
         regra = f"SALTA {sentido} DE {limiar:.1f} PX NESTE CONJUNTO"
     linhas = [
-        f"PESO DIST {peso_distancia:+.4f} / PESO ALT {peso_altura:+.4f} / PESO LARG {peso_largura:+.4f} / VIES {vies:+.4f}",
+        f"PESO DIST {peso_distancia:+.3f} / ALT {peso_altura:+.3f} / LARG {peso_largura:+.3f} / VEL {peso_velocidade:+.3f} / VIES {vies:+.3f}",
         f"DIST {ambiente.distancia} PX / ALT {altura} PX / LARG {ambiente.obstaculo.width} PX / {'SALTAR' if pedido else 'ESPERAR'}",
         regra,
     ]
@@ -174,6 +174,7 @@ def desenhar_populacao(tela, recursos, treino, detalhes=False):
     recursos.texto(tela, "SOBREVIVENTES", 242, 18, escala=1)
     recursos.texto(tela, f"{len(vivos):02}/{treino.tamanho}", 242, 42, escala=3)
     recursos.texto(tela, "TEMPO", 474, 18)
+    recursos.texto(tela, f"VEL {ambiente.velocidade:.0f} PX/S", 474, 78, escala=1)
     recursos.texto(tela, formatar_tempo(ambiente.tempo_vivo), 474, 42, escala=3)
     recursos.texto(tela, "RECORDE IA", 694, 18)
     recursos.texto(tela, formatar_tempo(treino.melhor_tempo), 694, 42, escala=3)
@@ -205,6 +206,7 @@ def desenhar(tela, recursos, ambiente, sessao, modo="treino", detalhes=False):
     if modo == "humano":
         recorde = max(recorde, ambiente.tempo_vivo)
     recursos.texto(tela, "TEMPO", 474, 18)
+    recursos.texto(tela, f"VEL {ambiente.velocidade:.0f} PX/S", 474, 78, escala=1)
     valor = formatar_tempo(ambiente.tempo_vivo)
     recursos.texto(tela, valor, 474, 42, escala=3 if len(valor) <= 8 else 2)
     recursos.texto(tela, "PESSOAL" if modo == "humano" else "RECORDE IA", 694, 18)

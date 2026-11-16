@@ -32,7 +32,7 @@ class TestGeracoes(unittest.TestCase):
         self.assertEqual(len({p.parametros for p in self.treino.individuos}), 50)
 
     def test_campea_existente_entra_na_populacao_sem_alterar_arquivo(self):
-        parametros = (-1.5, 0.7, -0.4, 0.45)
+        parametros = (-1.5, 0.7, -0.4, 0.0, 0.45)
         salvar_campeao(self.caminho, parametros, 120, None, SEMENTE_TREINO)
         original = self.caminho.read_bytes()
         with contextlib.redirect_stdout(io.StringIO()):

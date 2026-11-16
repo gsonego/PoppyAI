@@ -30,14 +30,16 @@ class Treino:
         self._anunciar_tentativa()
 
     def _anunciar_tentativa(self):
-        peso_distancia, peso_altura, peso_largura, vies = self.parametros
+        peso_distancia, peso_altura, peso_largura, peso_velocidade, vies = self.parametros
         print(
             f"Tentativa {self.tentativa}: peso_distancia={peso_distancia:.3f}, "
-            f"peso_altura={peso_altura:.3f}, peso_largura={peso_largura:.3f}, vies={vies:.3f}"
+            f"peso_altura={peso_altura:.3f}, peso_largura={peso_largura:.3f}, "
+            f"peso_velocidade={peso_velocidade:.3f}, vies={vies:.3f}"
         )
 
     def _sortear_parametros(self):
         return (
+            self.sorteio.uniform(-2.0, 2.0),
             self.sorteio.uniform(-2.0, 2.0),
             self.sorteio.uniform(-2.0, 2.0),
             self.sorteio.uniform(-2.0, 2.0),
@@ -47,11 +49,12 @@ class Treino:
     def _proxima_candidata(self):
         if self.melhores_parametros is None or self.sorteio.random() < 0.20:
             return self._sortear_parametros()
-        peso_distancia, peso_altura, peso_largura, vies = self.melhores_parametros
+        peso_distancia, peso_altura, peso_largura, peso_velocidade, vies = self.melhores_parametros
         return (
             peso_distancia + self.sorteio.gauss(0.0, 0.20),
             peso_altura + self.sorteio.gauss(0.0, 0.20),
             peso_largura + self.sorteio.gauss(0.0, 0.20),
+            peso_velocidade + self.sorteio.gauss(0.0, 0.20),
             vies + self.sorteio.gauss(0.0, 0.10),
         )
 

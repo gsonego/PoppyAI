@@ -52,7 +52,7 @@ class TreinoGeracoes(Treino):
         for poppy in self.vivos:
             ambiente = poppy.ambiente
             pedido = decidir_salto(ambiente.distancia, ambiente.obstaculo.height,
-                                   ambiente.obstaculo.width, poppy.parametros)
+                                   ambiente.obstaculo.width, ambiente.velocidade, poppy.parametros)
             ambiente.avancar(pedido)
         self.salvar_melhor(forcar=not self.vivos)
 
@@ -70,7 +70,7 @@ class TreinoGeracoes(Treino):
             else:
                 mae = self.sorteio.choice(pais)
                 parametros.append(tuple(peso + self.sorteio.gauss(0, desvio)
-                                        for peso, desvio in zip(mae, (0.20, 0.20, 0.20, 0.10))))
+                                        for peso, desvio in zip(mae, (0.20, 0.20, 0.20, 0.20, 0.10))))
         self.geracao += 1
         self._criar_individuos(parametros)
         print(f"Geração {self.geracao}: {self.tamanho} Poppys | recorde={self.melhor_tempo:.2f}s")

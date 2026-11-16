@@ -5,7 +5,8 @@ import random
 import pygame
 
 from config import (
-    CHAO_Y, GRAVIDADE, LARGURA, PASSO, POPPY_ALTURA, POPPY_LARGURA, POPPY_X, VELOCIDADE_OBSTACULO,
+    ACELERACAO_OBSTACULO, CHAO_Y, GRAVIDADE, LARGURA, PASSO, POPPY_ALTURA, POPPY_LARGURA, POPPY_X,
+    VELOCIDADE_MAXIMA, VELOCIDADE_OBSTACULO,
     VELOCIDADE_SALTO,
 )
 
@@ -20,6 +21,10 @@ class Ambiente:
     @property
     def distancia(self):
         return self.obstaculo.left - self.personagem.right
+
+    @property
+    def velocidade(self):
+        return min(VELOCIDADE_MAXIMA, VELOCIDADE_OBSTACULO + ACELERACAO_OBSTACULO * self.tempo_vivo)
 
     @property
     def caixas(self):
@@ -103,7 +108,7 @@ class Ambiente:
             self.no_chao = True
         self.personagem.y = round(self.posicao_y)
 
-        deslocamento = VELOCIDADE_OBSTACULO * PASSO
+        deslocamento = self.velocidade * PASSO
         self.distancia_percorrida += deslocamento
         self.obstaculo_x -= deslocamento
         self.obstaculo.x = round(self.obstaculo_x)

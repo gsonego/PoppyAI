@@ -9,7 +9,7 @@ import pygame
 
 from ambiente import Ambiente
 from art.animacao_poppy import quadro_corrida
-from config import PASSO, VELOCIDADE_OBSTACULO
+from config import ACELERACAO_OBSTACULO, PASSO, VELOCIDADE_OBSTACULO
 from interface import RecursosInterface, desenhar
 
 
@@ -40,7 +40,8 @@ class TestAnimacao(unittest.TestCase):
         ambiente = Ambiente(123)
         for _ in range(10):
             ambiente.avancar(False)
-        self.assertAlmostEqual(ambiente.distancia_percorrida, 10 * VELOCIDADE_OBSTACULO * PASSO)
+        esperado = 10 * VELOCIDADE_OBSTACULO * PASSO + ACELERACAO_OBSTACULO * PASSO ** 2 * sum(range(10))
+        self.assertAlmostEqual(ambiente.distancia_percorrida, esperado)
         anterior = ambiente.distancia_percorrida
         ambiente.fim_de_jogo = True
         ambiente.avancar(False)

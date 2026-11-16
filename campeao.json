@@ -1,0 +1,10 @@
+{
+  "experimento": {
+    "versao": 1,
+    "limite_segundos": 30.0,
+    "semente_treino": 123
+  },
+  "peso": -1.4994843551490669,
+  "vies": 0.5435366935224055,
+  "tempo_segundos": 30.0
+}

@@ -1,5 +1,8 @@
 import pygame
 import random
+from pathlib import Path
+
+from campeao import carregar_campeao, salvar_campeao
 
 pygame.init()
 
@@ -13,7 +16,8 @@ VELOCIDADE_OBSTACULO = 350
 
 # Uma sequencia reproduzivel ajuda a investigar os resulados
 sorteio = random.Random(42)
-gerador_obstaculos = random.Random(123)
+SEMENTE_TREINO = 123
+gerador_obstaculos = random.Random(SEMENTE_TREINO)
 
 PESO_DISTANCIA = sorteio.uniform(-2.0, 2.0)
 VIES = sorteio.uniform(-1.0, 1.0)
@@ -22,6 +26,23 @@ melhores_parametros = None
 melhor_tempo = -1.0
 tentativa = 1
 LIMITE_TENTATIVA = 30.0
+ARQUIVO_CAMPEAO = Path(__file__).resolve().with_name("campeao.json")
+
+try:
+    campeao_salvo = carregar_campeao(
+        ARQUIVO_CAMPEAO, LIMITE_TENTATIVA, SEMENTE_TREINO
+    )
+except (OSError, ValueError) as erro:
+    pygame.quit()
+    raise SystemExit(f"Não foi possível carregar {ARQUIVO_CAMPEAO}: {erro}")
+
+if campeao_salvo is not None:
+    melhores_parametros, melhor_tempo = campeao_salvo
+    # A primeira candidata desta execução reproduz a campeã carregada.
+    PESO_DISTANCIA, VIES = melhores_parametros
+    print(f"Campeã carregada: recorde de treino={melhor_tempo:.2f}s")
+else:
+    print("Nenhuma campeã salva. Iniciando uma nova busca.")
 
 print(
     f"Tentativa {tentativa}: "
@@ -47,6 +68,7 @@ velocidade_y = 0.0
 no_chao = True
 fim_de_jogo = False
 tempo_vivo = 0.0
+tentativa_manual = False
 
 executando = True
 
@@ -60,6 +82,7 @@ while executando:
 
         if evento.type == pygame.KEYDOWN:
             if evento.key == pygame.K_r:
+                tentativa_manual = True
                 posicao_y = float(CHAO_Y - personagem.height)
                 personagem.y = round(posicao_y)
                 velocidade_y = 0.0
@@ -76,6 +99,7 @@ while executando:
                 and no_chao
                 and not fim_de_jogo
             ):
+                tentativa_manual = True
                 velocidade_y = VELOCIDADE_SALTO
                 no_chao = False
 
@@ -122,11 +146,19 @@ while executando:
     # Avaliar a tentativa quando houver colisão ou atingir o limite.
     if fim_de_jogo or tempo_vivo >= LIMITE_TENTATIVA:
         pontuacao = min(tempo_vivo, LIMITE_TENTATIVA)
-        melhorou = pontuacao > melhor_tempo
+        melhorou = not tentativa_manual and pontuacao > melhor_tempo
 
         if melhorou:
             melhor_tempo = pontuacao
             melhores_parametros = (PESO_DISTANCIA, VIES)
+            try:
+                salvar_campeao(
+                    ARQUIVO_CAMPEAO, melhores_parametros, melhor_tempo,
+                    LIMITE_TENTATIVA, SEMENTE_TREINO,
+                )
+            except (OSError, ValueError) as erro:
+                pygame.quit()
+                raise SystemExit(f"Não foi possível salvar a campeã: {erro}")
 
         motivo = "colisao" if fim_de_jogo else "limite atingido"
 
@@ -134,6 +166,7 @@ while executando:
             f"Tentativa {tentativa}: {pontuacao:.2f}s "
             f"({motivo}) | recorde={melhor_tempo:.2f}s"
             + (" | NOVO RECORDE" if melhorou else "")
+            + (" | intervenção manual: fora do recorde" if tentativa_manual else "")
         )
 
         # Escolher os parâmetros da próxima tentativa.
@@ -155,7 +188,7 @@ while executando:
         velocidade_y = 0.0
         no_chao = True
 
-        gerador_obstaculos.seed(123)
+        gerador_obstaculos.seed(SEMENTE_TREINO)
 
         obstaculo.size = (30, 50)
         obstaculo.bottom = CHAO_Y
@@ -164,6 +197,7 @@ while executando:
 
         tempo_vivo = 0.0
         fim_de_jogo = False
+        tentativa_manual = False
 
         print(
             f"Tentativa {tentativa}: "

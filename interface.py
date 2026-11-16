@@ -7,7 +7,7 @@ import pygame
 from art.cenario import CREME, ROSA, TINTA, terreno
 from art.animacao_poppy import carregar_corrida, quadro_corrida
 from art.fonte_pixel import FontePixel
-from config import ALTURA, CHAO_Y, LARGURA
+from config import ALTURA, CHAO_Y, LARGURA, POPPY_DESLOCAMENTO_VISUAL_X
 from janela import apresentar
 from politica import decidir_salto, limiar_salto
 
@@ -127,14 +127,15 @@ def desenhar(tela, recursos, ambiente, sessao, modo="treino", detalhes=False):
     tela.blit(recursos.fundo, (0, 0))
     for caixa in ambiente.caixas:
         desenhar_caixa(tela, caixa)
-    # Orelhas e cauda são decorativas; o retângulo da física é preservado.
+    # Corpo e cabeça colidem; pontas das orelhas e cauda são decorativas.
     if ambiente.fim_de_jogo:
         sprite = recursos.sprite(76, atingida=True)
     else:
         # No ar, mantém uma pose com as patas recolhidas até o pouso.
         indice = quadro_corrida(ambiente.distancia_percorrida) if ambiente.no_chao else 1
         sprite = recursos.sprite_corrida(76, indice)
-    tela.blit(sprite, sprite.get_rect(midbottom=ambiente.personagem.midbottom))
+    apoio = (ambiente.personagem.centerx + POPPY_DESLOCAMENTO_VISUAL_X, ambiente.personagem.bottom)
+    tela.blit(sprite, sprite.get_rect(midbottom=apoio))
     recursos.texto(tela, "POPPY", 24, 22, escala=3)
     recursos.texto(tela, ".AI", 116, 24, ROSA)
     rotulo = {"humano": "JOGAR", "treino": "TREINO", "avaliacao": "AVALIACAO"}[modo]

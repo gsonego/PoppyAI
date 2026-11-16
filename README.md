@@ -17,20 +17,23 @@ Escolha com as setas e Enter, ou clique em uma opção:
 - **Ver a IA jogar:** usa a campeã salva com parâmetros fixos.
 
 O visual usa a Poppy aprovada em pixel art, cenário claro e fonte bitmap incluída
-no projeto. O cenário e os sprites são carregados uma vez; a física continua igual.
+no projeto. O cenário e os sprites são carregados uma vez; a interface não altera a física.
 O jogo abre em tela cheia, na resolução do monitor. `F11` alterna entre tela cheia
 e janela; no modo janela, você pode redimensionar ou maximizar. A imagem mantém a proporção, com faixas
 nas sobras, e usa ampliação sem suavização para preservar os pixels. As coordenadas
 do mouse são convertidas para que os botões continuem funcionando em qualquer tamanho.
-Orelhas e cauda são partes decorativas da arte; `Tab` também mostra o retângulo
-de colisão nos modos da IA.
+A área de colisão da Poppy tem 48 × 56 pixels lógicos e cobre corpo e cabeça.
+As pontas das orelhas, a cauda e as extremidades das patas ficam fora para dar
+uma pequena tolerância. O retângulo é fixo entre as poses; não muda a cada passo.
+`Tab` mostra essa área nos modos da IA. A distância do sensor parte da frente
+desse retângulo. A arte mantém a posição visual anterior, com um deslocamento
+horizontal de -5 pixels em relação ao centro da área de colisão.
 
 A corrida usa quatro poses alinhadas, alternadas a cada 32 pixels percorridos
 pelo mundo. Ela acompanha o deslocamento da partida, sem depender do relógio real.
 No salto, as patas ficam recolhidas; na colisão, a corrida para e a Poppy fica
 vermelha. No menu ela permanece parada. Quadros e tamanhos são carregados e
-guardados em memória, sem leitura de imagem a cada quadro. Física, pesos e
-recordes continuam compatíveis.
+guardados em memória, sem leitura de imagem a cada quadro. A animação por si só não altera a física nem a política.
 
 Durante a partida: `Espaço` salta (humano e treino), `R` reinicia, `Esc` volta
 ao menu e `Tab` abre ou fecha os detalhes da IA (treino e avaliação).
@@ -38,7 +41,7 @@ No modo humano, a colisão mantém o resultado na tela; `R` repete a partida.
 A Poppy fica vermelha ao colidir. No humano e na avaliação, ela permanece assim
 até reiniciar; no treino, a colisão fica visível por 0,45 segundo antes da próxima
 tentativa. Essa pausa não conta no tempo sobrevivido e não bloqueia os controles.
-Seu recorde é salvo em `recorde_humano_caixas_duplas.json` ao morrer, reiniciar, voltar ao menu
+Seu recorde é salvo em `recorde_humano_colisao.json` ao morrer, reiniciar, voltar ao menu
 ou fechar a janela. Ele é separado dos pesos e do recorde da IA.
 
 Para entrar diretamente, use `--modo humano`, `--modo treino` ou
@@ -53,7 +56,7 @@ Para observar a campeã salva, com os três pesos e o viés fixos:
 Sem `--modo`, o programa abre o menu.
 Na avaliação, a partida continua até a colisão, sem limite de tempo, e mantém
 o resultado na tela. R repete a mesma sequência desde o início; o salto
-manual fica desativado. Esse modo não gera mutações nem grava em `campeao_largura.json`.
+manual fica desativado. Esse modo não gera mutações nem grava em `campeao_colisao.json`.
 Se não houver campeã salva, o programa informa que é preciso treinar primeiro.
 
 Para avaliar em outra sequência de obstáculos:
@@ -88,12 +91,13 @@ viés, sem marca de distância. Limites negativos ou fora da tela continuam
 descritos no texto, sem uma marca visível no chão. O pedido só vira um salto
 quando o personagem está no chão e a distância é não negativa.
 
-O modelo da IA é a versão 4, com três pesos e um viés, salvo em
-`campeao_largura.json`. É necessário treinar uma campeã desta versão antes de
-avaliá-la. Os arquivos anteriores (`campeao.json`, `campeao_altura.json` e
-`campeao_caixas_duplas.json`) são preservados. O recorde humano continua em
-`recorde_humano_caixas_duplas.json`, com a versão 3 das regras da partida;
-alterar as entradas da IA não invalida esse recorde.
+O modelo da IA é a versão 5, com três pesos e um viés, salvo em
+`campeao_colisao.json`. As regras da partida são a versão 4, com o recorde pessoal
+em `recorde_humano_colisao.json`. A colisão maior muda o desafio: é necessário
+novo treino e novos recordes. Os arquivos anteriores (`campeao.json`,
+`campeao_altura.json`, `campeao_caixas_duplas.json`, `campeao_largura.json` e
+os recordes humanos anteriores) são preservados. As forças do salto e a
+velocidade continuam iguais, e os maiores obstáculos permanecem ultrapassáveis.
 
 A largura permite aprender um momento de salto diferente para caixas largas.
 A força e a duração do salto continuam fixas: a IA só decide quando pedir o
@@ -142,7 +146,7 @@ O ambiente não conhece pesos nem mutações. A política não conhece a física
 - Passo fixo de 1/60 s e tentativas sem limite de tempo: terminam na colisão.
 - No treino, os parâmetros mudam após a colisão. Novos recordes são salvos durante a partida, a cada avanço de aproximadamente um segundo sobre o recorde salvo, e também na colisão, antes de reiniciar, ao voltar ao menu ou ao fechar a janela. Tentativas com intervenção manual não substituem a campeã. Se uma candidata sobreviver indefinidamente, a mesma tentativa continuará rodando e sendo salva enquanto melhora o recorde.
 - Treino sempre na sequência de obstáculos da semente 123.
-- Campeã salva em `campeao_largura.json`, ao lado dos arquivos; empates preservam a anterior.
+- Campeã salva em `campeao_colisao.json`, ao lado dos arquivos; empates preservam a anterior.
 - Durante o jogo, as gravações ocorrem em uma thread separada para não bloquear os quadros. Se o disco estiver ocupado, a fila mantém apenas o pedido mais recente. Ao fechar a janela, o programa espera a última gravação terminar. Erros de gravação são informados.
 - Ao reabrir, a primeira candidata usa os parâmetros salvos. O estado do gerador de mutações não é salvo, portanto a busca não continua exatamente de onde parou.
 - No treino, Espaço permite salto manual e R reposiciona o jogo. Tentativas com intervenção manual não entram no recorde. R mantém o tamanho e a sequência atuais dos obstáculos, como na versão anterior.

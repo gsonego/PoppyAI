@@ -5,7 +5,7 @@ import random
 import pygame
 
 from config import (
-    CHAO_Y, GRAVIDADE, LARGURA, PASSO, VELOCIDADE_OBSTACULO,
+    CHAO_Y, GRAVIDADE, LARGURA, PASSO, POPPY_ALTURA, POPPY_LARGURA, POPPY_X, VELOCIDADE_OBSTACULO,
     VELOCIDADE_SALTO,
 )
 
@@ -13,7 +13,7 @@ from config import (
 class Ambiente:
     def __init__(self, semente):
         self.gerador_obstaculos = random.Random()
-        self.personagem = pygame.Rect(100, CHAO_Y - 40, 40, 40)
+        self.personagem = pygame.Rect(POPPY_X, CHAO_Y - POPPY_ALTURA, POPPY_LARGURA, POPPY_ALTURA)
         self.obstaculo = pygame.Rect(LARGURA, CHAO_Y - 50, 30, 50)
         self.reiniciar(semente)
 

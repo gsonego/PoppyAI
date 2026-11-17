@@ -12,6 +12,7 @@ from unittest.mock import patch
 
 import pygame
 import main
+from tests.apoio import RelogioTeste
 
 from ambiente import Ambiente
 from avaliacao import Avaliacao
@@ -162,7 +163,7 @@ class TestCiclo(unittest.TestCase):
             eventos = [[] for _ in range(30)] + [[pygame.event.Event(pygame.QUIT)]]
             with patch.dict(os.environ, {"SDL_VIDEODRIVER": "dummy", "SDL_AUDIODRIVER": "dummy"}), \
                     patch("main.TreinoGeracoes", return_value=treino), \
-                    patch("main.pygame.time.Clock"), \
+                    patch("main.RelogioQuadros", RelogioTeste), \
                     patch("main.pygame.event.get", side_effect=eventos), \
                     patch("main.desenhar_populacao"):
                 main.main("treino")

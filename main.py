@@ -7,20 +7,28 @@ import pygame
 from ambiente import Ambiente
 from avaliacao import Avaliacao
 from campeao import GravadorCampeao
-from config import FPS, SEMENTE_TREINO
+from config import SEMENTE_TREINO
 from humano import JogoHumano
 from interface import OPCOES_MENU, RecursosInterface, botoes_menu, desenhar, desenhar_menu, desenhar_populacao
-from janela import criar_janela, posicao_logica, tratar_redimensionamento
+from janela import criar_janela, posicao_logica, taxa_atualizacao, tratar_redimensionamento
 from politica import decidir_salto
 from geracoes import TreinoGeracoes
+from temporizacao import AvancoFixo, RelogioQuadros
+
+
+def tratar_evento_visual(evento, recursos):
+    tratar_redimensionamento(evento)
+    if evento.type == pygame.KEYDOWN and evento.key == pygame.K_F3:
+        recursos.mostrar_diagnostico = not recursos.mostrar_diagnostico
 
 
 def escolher_modo(tela, recursos, relogio, aviso=""):
+    recursos.mostrar_diagnostico = False
     selecionado = 0
     while True:
-        relogio.tick(FPS)
+        relogio.tick()
         for evento in pygame.event.get():
-            tratar_redimensionamento(evento)
+            tratar_evento_visual(evento, recursos)
             if evento.type == pygame.QUIT:
                 return None
             if evento.type == pygame.KEYDOWN:
@@ -49,11 +57,13 @@ def jogar_populacao(tela, recursos, relogio):
         treino = TreinoGeracoes(salvar=gravador.agendar)
         pygame.display.set_caption("PoppyAI — treino de 50 Poppys")
         detalhes = False
+        avanco = AvancoFixo()
+        relogio.reiniciar()
         while True:
-            relogio.tick(FPS)
+            segundos = relogio.tick()
             gravador.verificar_erro()
             for evento in pygame.event.get():
-                tratar_redimensionamento(evento)
+                tratar_evento_visual(evento, recursos)
                 if evento.type == pygame.QUIT:
                     return True
                 if evento.type == pygame.KEYDOWN:
@@ -63,7 +73,9 @@ def jogar_populacao(tela, recursos, relogio):
                         detalhes = not detalhes
                     if evento.key == pygame.K_n:
                         treino.proxima_geracao()
-            treino.avancar()
+            for _ in range(avanco.acumular(segundos)):
+                treino.avancar()
+            recursos.interpolacao = avanco.fracao
             desenhar_populacao(tela, recursos, treino, detalhes)
     finally:
         try:
@@ -84,10 +96,12 @@ def jogar(tela, recursos, relogio, modo, semente):
         ambiente = Ambiente(semente)
         pygame.display.set_caption(f"PoppyAI — {modo}")
         detalhes = False
+        avanco = AvancoFixo()
+        relogio.reiniciar()
         while True:
-            relogio.tick(FPS)
+            segundos = relogio.tick()
             for evento in pygame.event.get():
-                tratar_redimensionamento(evento)
+                tratar_evento_visual(evento, recursos)
                 if evento.type == pygame.QUIT:
                     return True
                 if evento.type == pygame.KEYDOWN:
@@ -102,7 +116,9 @@ def jogar(tela, recursos, relogio, modo, semente):
                         sessao.concluida = False
                     if evento.key == pygame.K_SPACE and modo == "humano":
                         ambiente.pular_manualmente()
-            if not sessao.concluida:
+            for _ in range(avanco.acumular(segundos)):
+                if sessao.concluida:
+                    break
                 pedir_salto = False
                 if modo == "avaliacao":
                     pedir_salto = decidir_salto(
@@ -112,6 +128,7 @@ def jogar(tela, recursos, relogio, modo, semente):
                 ambiente.avancar(pedir_salto)
                 if sessao.terminou(ambiente):
                     sessao.concluir_tentativa(ambiente)
+            recursos.interpolacao = avanco.fracao
             desenhar(tela, recursos, ambiente, sessao, modo, detalhes)
     finally:
         if modo == "humano" and sessao is not None and ambiente is not None:
@@ -128,7 +145,8 @@ def main(modo=None, semente=None):
     try:
         tela = criar_janela()
         recursos = RecursosInterface()
-        relogio = pygame.time.Clock()
+        relogio = RelogioQuadros(taxa_atualizacao())
+        recursos.relogio = relogio
         aviso = ""
         while True:
             pelo_menu = modo is None

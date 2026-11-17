@@ -4,6 +4,8 @@ from pathlib import Path
 
 import pygame
 
+from apresentacao import VistaAmbiente
+
 from art.cenario import CREME, ROSA, TINTA, criar_faixa_chao, desenhar_chao, terreno
 from art.animacao_poppy import carregar_corrida, quadro_corrida
 from art.fonte_pixel import FontePixel
@@ -31,6 +33,21 @@ class RecursosInterface:
         self.poppy_atingida = imagem_atingida.subsurface(imagem_atingida.get_bounding_rect(min_alpha=128))
         self.corrida = carregar_corrida(caminho.with_name("poppy-corrida-proposta.png"))
         self._sprites = {}
+        self.interpolacao = 1.0
+        self.mostrar_diagnostico = False
+        self.relogio = None
+
+    def visual(self, ambiente):
+        if self.interpolacao >= 1.0 or ambiente.fim_de_jogo:
+            return ambiente
+        return VistaAmbiente(ambiente, self.interpolacao)
+
+    def desenhar_diagnostico(self, tela):
+        if self.mostrar_diagnostico and self.relogio is not None:
+            fps, media, p95 = self.relogio.resumo()
+            pygame.draw.rect(tela, CREME, (232, 72, 660, 22))
+            self.texto(tela, f"FPS {fps:.1f} / QUADRO {media:.2f} MS / P95 {p95:.2f} MS / FISICA 60 HZ",
+                       240, 80, escala=1)
 
     def desenhar_fundo(self, tela, distancia=0):
         tela.blit(self.fundo, (0, 0))
@@ -87,6 +104,8 @@ def desenhar_menu(tela, recursos, selecionado=0, aviso=""):
     recursos.texto(tela, "SETAS + ENTER OU CLIQUE PARA ESCOLHER", 24, 380, escala=1)
     recursos.texto(tela, "ESC SAIR", 780, 380, escala=1)
     recursos.texto(tela, "F11 TELA", 650, 380, escala=1)
+    recursos.texto(tela, "F3 FPS", 548, 380, escala=1)
+    recursos.desenhar_diagnostico(tela)
     apresentar(tela)
 
 
@@ -138,6 +157,7 @@ def desenhar_decisao(tela, recursos, ambiente, sessao, modo, mostrar_sensor=True
 
 
 def desenhar_poppy(tela, recursos, ambiente, transparente=False):
+    ambiente = recursos.visual(ambiente)
     # Corpo e cabeça colidem; pontas das orelhas e cauda são decorativas.
     if ambiente.fim_de_jogo:
         sprite = recursos.sprite(76, atingida=True)
@@ -155,23 +175,24 @@ def desenhar_populacao(tela, recursos, treino, detalhes=False):
     lider = treino.lider
     ambiente = lider.ambiente
     vivos = treino.vivos
-    recursos.desenhar_fundo(tela, ambiente.distancia_percorrida)
-    for caixa in ambiente.caixas_visiveis:
+    visual = recursos.visual(ambiente)
+    recursos.desenhar_fundo(tela, visual.distancia_percorrida)
+    for caixa in visual.caixas_visiveis:
         desenhar_caixa(tela, caixa)
     # Destinos distribuídos na frente da caixa tornam as linhas sobrepostas mais visíveis.
     if ambiente.obstaculo.right >= ambiente.personagem.left:
         for poppy in vivos:
-            origem = poppy.ambiente.personagem.midright
-            destino = (ambiente.obstaculo.left,
-                       ambiente.obstaculo.top + round((poppy.numero - 0.5) * ambiente.obstaculo.height / treino.tamanho))
+            origem = recursos.visual(poppy.ambiente).personagem.midright
+            destino = (visual.obstaculo.left,
+                       visual.obstaculo.top + round((poppy.numero - 0.5) * visual.obstaculo.height / treino.tamanho))
             pygame.draw.line(tela, poppy.cor, origem, destino)
     for poppy in vivos:
         if poppy is not lider:
             desenhar_poppy(tela, recursos, poppy.ambiente, transparente=True)
     if vivos:
         desenhar_poppy(tela, recursos, lider.ambiente)
-        recursos.texto(tela, f'#{lider.numero:02}', lider.ambiente.personagem.x,
-                       lider.ambiente.personagem.top - 29, lider.cor, 1)
+        recursos.texto(tela, f'#{lider.numero:02}', visual.personagem.x,
+                       visual.personagem.top - 29, lider.cor, 1)
     recursos.texto(tela, "POPPY", 24, 22, escala=3)
     recursos.texto(tela, ".AI", 116, 24, ROSA)
     recursos.texto(tela, "TREINO", 24, 55)
@@ -189,13 +210,16 @@ def desenhar_populacao(tela, recursos, treino, detalhes=False):
     recursos.texto(tela, "N PROXIMA GERACAO", 24, 380, escala=1)
     recursos.texto(tela, "ESC MENU", 380, 380, escala=1)
     recursos.texto(tela, "F11 TELA", 500, 380, escala=1)
+    recursos.texto(tela, "F3 FPS", 580, 380, escala=1)
     recursos.texto(tela, "TAB FECHAR IA" if detalhes else "TAB DETALHES IA", 710, 380, escala=1)
+    recursos.desenhar_diagnostico(tela)
     apresentar(tela)
 
 
 def desenhar(tela, recursos, ambiente, sessao, modo="treino", detalhes=False):
-    recursos.desenhar_fundo(tela, ambiente.distancia_percorrida)
-    for caixa in ambiente.caixas_visiveis:
+    visual = recursos.visual(ambiente)
+    recursos.desenhar_fundo(tela, visual.distancia_percorrida)
+    for caixa in visual.caixas_visiveis:
         desenhar_caixa(tela, caixa)
     desenhar_poppy(tela, recursos, ambiente)
     recursos.texto(tela, "POPPY", 24, 22, escala=3)
@@ -224,6 +248,7 @@ def desenhar(tela, recursos, ambiente, sessao, modo="treino", detalhes=False):
         recursos.texto(tela, "ESPACO SALTAR", 174, 380, escala=1)
     recursos.texto(tela, "ESC MENU", 380, 380, escala=1)
     recursos.texto(tela, "F11 TELA", 500, 380, escala=1)
+    recursos.texto(tela, "F3 FPS", 580, 380, escala=1)
     if modo != "humano":
         recursos.texto(tela, "TAB FECHAR IA" if detalhes else "TAB DETALHES IA", 710, 380, escala=1)
     if detalhes and modo != "humano":
@@ -232,4 +257,5 @@ def desenhar(tela, recursos, ambiente, sessao, modo="treino", detalhes=False):
         pygame.draw.rect(tela, TINTA, (300, 222, 372, 66))
         recursos.texto(tela, "FIM DE JOGO", 326, 234, CREME)
         recursos.texto(tela, "R PARA REPETIR / ESC MENU", 326, 264, CREME, 1)
+    recursos.desenhar_diagnostico(tela)
     apresentar(tela)

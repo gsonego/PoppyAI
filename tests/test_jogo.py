@@ -12,6 +12,7 @@ from unittest.mock import patch
 import pygame
 
 import main
+from tests.apoio import RelogioTeste
 from ambiente import Ambiente
 from humano import JogoHumano
 from interface import RecursosInterface, desenhar, desenhar_menu, formatar_tempo
@@ -54,7 +55,7 @@ class TestJogo(unittest.TestCase):
         with patch("main.JogoHumano", return_value=sessao), \
                 patch("main.decidir_salto", side_effect=AssertionError("IA chamada no modo humano")), \
                 patch("main.TreinoGeracoes", side_effect=AssertionError("Treino criado no modo humano")), \
-                patch("main.pygame.time.Clock"), \
+                patch("main.RelogioQuadros", RelogioTeste), \
                 patch("main.pygame.event.get", side_effect=eventos), \
                 patch("main.desenhar", side_effect=observar):
             main.main("humano")
@@ -78,7 +79,7 @@ class TestJogo(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()), \
                 patch("main.JogoHumano", return_value=JogoHumano(self.caminho)), \
                 patch("main.Avaliacao", side_effect=SystemExit("Nenhuma campeã salva")), \
-                patch("main.pygame.time.Clock"), \
+                patch("main.RelogioQuadros", RelogioTeste), \
                 patch("main.pygame.event.get", side_effect=eventos), \
                 patch("main.desenhar_menu", side_effect=observar):
             main.main()
@@ -89,8 +90,23 @@ class TestJogo(unittest.TestCase):
         pygame.init()
         tela = pygame.display.set_mode((900, 400))
         evento = pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=(500, 180), button=1)
-        with patch("main.pygame.event.get", return_value=[evento]), patch("main.pygame.time.Clock"):
+        with patch("main.pygame.event.get", return_value=[evento]), patch("main.RelogioQuadros", RelogioTeste):
             self.assertEqual(main.escolher_modo(tela, RecursosInterface(), pygame.time.Clock()), "treino")
+
+    def test_diagnostico_f3_nao_permanece_ao_voltar_para_menu(self):
+        eventos = [[tecla(pygame.K_RETURN)], [tecla(pygame.K_F3)],
+                   [tecla(pygame.K_ESCAPE)], [], [pygame.event.Event(pygame.QUIT)]]
+        na_partida, no_menu = [], []
+        with patch("main.JogoHumano", return_value=JogoHumano(self.caminho)), \
+                patch("main.RelogioQuadros", RelogioTeste), \
+                patch("main.pygame.event.get", side_effect=eventos), \
+                patch("main.desenhar", side_effect=lambda tela, recursos, *args:
+                      na_partida.append(recursos.mostrar_diagnostico)), \
+                patch("main.desenhar_menu", side_effect=lambda tela, recursos, *args:
+                      no_menu.append(recursos.mostrar_diagnostico)):
+            main.main()
+        self.assertEqual(na_partida, [True])
+        self.assertEqual(no_menu, [False])
 
     def test_menu_aceita_clique_ampliado_com_faixas(self):
         pygame.init()
@@ -100,7 +116,7 @@ class TestJogo(unittest.TestCase):
         desenhar_menu(tela, recursos)
         # O conteúdo é ampliado 2×, com 100 pixels de faixa acima e abaixo.
         evento = pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=(1000, 460), button=1)
-        with patch("main.pygame.event.get", return_value=[evento]), patch("main.pygame.time.Clock"):
+        with patch("main.pygame.event.get", return_value=[evento]), patch("main.RelogioQuadros", RelogioTeste):
             self.assertEqual(main.escolher_modo(tela, recursos, pygame.time.Clock()), "treino")
         self.assertIsNone(posicao_logica((1000, 50)))
 
@@ -141,7 +157,7 @@ class TestJogo(unittest.TestCase):
                                  terminou=lambda ambiente: False)
         eventos = [[tecla(pygame.K_TAB)], [tecla(pygame.K_TAB)], [pygame.event.Event(pygame.QUIT)]]
         detalhes = []
-        with patch("main.Avaliacao", return_value=sessao), patch("main.pygame.time.Clock"), \
+        with patch("main.Avaliacao", return_value=sessao), patch("main.RelogioQuadros", RelogioTeste), \
                 patch("main.pygame.event.get", side_effect=eventos), \
                 patch("main.desenhar", side_effect=lambda *args: detalhes.append(args[-1])):
             main.main("avaliacao")

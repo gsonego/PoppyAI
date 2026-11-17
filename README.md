@@ -155,6 +155,25 @@ uma vez e repetido sem emendas. No menu ele fica parado; na colisão ele para;
 reiniciar a partida ou a geração restaura sua posição. Essa mudança é visual
 e não invalida pesos ou recordes. Paisagem e nuvens ainda permanecem estáticas.
 
+## Fluidez e diagnóstico
+
+A física e a IA continuam atualizando em passos fixos de 1/60 segundo, com um
+acumulador de tempo real. A apresentação usa um relógio de alta resolução e
+busca a frequência nominal do monitor primário (consulta SDL no Windows;
+60 Hz quando a informação não está disponível). Posições da Poppy, caixas,
+linhas e chão são interpoladas entre os dois últimos estados. A interpolação
+nunca altera a física, as entradas da IA ou a pontuação e adiciona até um passo
+de latência visual. Ao morrer ou reiniciar, o estado visual é fixado para não
+interpolar uma colisão ou o reinício da pista inteira.
+
+`F3` mostra ou esconde FPS de apresentação, tempo médio por quadro e P95
+(tempo abaixo do qual ficam 95% dos quadros recentes). A janela de medição tem
+até 240 amostras. Essa medição inclui o tempo real gasto entre quadros, mas não
+mede a entrega de imagens pelo monitor nem ativa VSync. A pixel art continua
+sem suavização: as posições finais são arredondadas para pixels lógicos.
+Pausas do sistema acima de 0,25 segundo são limitadas ao retomar a simulação,
+evitando uma fila enorme de atualizações. Pesos e recordes permanecem compatíveis.
+
 ## Velocidade progressiva
 
 Nos três modos, começa em 350 px/s e aumenta continuamente 2,5 px/s a cada
@@ -206,6 +225,8 @@ não são persistidos: ao reabrir, começa uma geração nova com a campeã salv
 | `campeao.py` | Salvar e carregar a melhor configuração em JSON. |
 | `interface.py` | Desenhar menu, partida e painel opcional, sem alterar a simulação. |
 | `janela.py` | Ampliar a apresentação e converter cliques sem alterar a física. |
+| `temporizacao.py` | Medir o ritmo de apresentação e acumular os passos fixos da física. |
+| `apresentacao.py` | Criar posições interpoladas para desenhar sem modificar a simulação. |
 | `art/cenario.py` | Desenhar a paisagem em pixel art e o chão que acompanha o deslocamento. |
 | `art/fonte_pixel.py` | Renderizar a fonte bitmap sem fontes externas. |
 

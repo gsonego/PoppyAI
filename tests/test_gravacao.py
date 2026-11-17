@@ -11,6 +11,7 @@ from unittest.mock import patch
 
 import pygame
 import main
+from tests.apoio import RelogioTeste
 from campeao import GravadorCampeao, carregar_campeao, salvar_campeao
 from config import SEMENTE_TREINO
 from geracoes import TreinoGeracoes
@@ -48,7 +49,7 @@ class TestGravacao(unittest.TestCase):
                 with patch.dict(os.environ, {"SDL_VIDEODRIVER": "dummy", "SDL_AUDIODRIVER": "dummy"}), \
                         patch("main.TreinoGeracoes", side_effect=criar_treino), \
                         patch("campeao.salvar_campeao", side_effect=salvar_lento), \
-                        patch("main.pygame.time.Clock"), \
+                        patch("main.RelogioQuadros", RelogioTeste), \
                         patch("main.pygame.event.get", side_effect=eventos), \
                         patch("main.desenhar_populacao"):
                     main.main("treino")

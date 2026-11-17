@@ -128,6 +128,8 @@ class Ambiente:
         self.obstaculo.x = round(self.obstaculo_x)
         self.tempo_vivo = 0.0
         self.distancia_percorrida = 0.0
+        self.distancia_anterior = 0.0
+        self.posicao_y_anterior = self.posicao_y
         self.fim_de_jogo = False
 
     def reiniciar(self, semente):
@@ -155,6 +157,8 @@ class Ambiente:
     def avancar(self, pedir_salto):
         if self.fim_de_jogo:
             return
+        self.distancia_anterior = self.distancia_percorrida
+        self.posicao_y_anterior = self.posicao_y
         if self.distancia >= 0 and self.no_chao and pedir_salto:
             self._pular()
 

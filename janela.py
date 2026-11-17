@@ -1,10 +1,33 @@
 """Amplia a apresentação sem mudar as coordenadas da física ou da interface."""
 
+import ctypes
+from pathlib import Path
+
 import pygame
 
 from config import ALTURA, LARGURA
 
 _tamanho_janela = (1350, 600)
+
+
+def taxa_atualizacao():
+    """Consulta o monitor pelo SDL já usado pelo Pygame; fallback de 60 Hz."""
+    class Modo(ctypes.Structure):
+        _fields_ = [("formato", ctypes.c_uint32), ("largura", ctypes.c_int),
+                    ("altura", ctypes.c_int), ("hz", ctypes.c_int), ("dados", ctypes.c_void_p)]
+
+    try:
+        caminho = Path(pygame.__file__).parent / "SDL2.dll"
+        sdl = ctypes.CDLL(str(caminho))
+        sdl.SDL_GetCurrentDisplayMode.argtypes = [ctypes.c_int, ctypes.POINTER(Modo)]
+        sdl.SDL_GetCurrentDisplayMode.restype = ctypes.c_int
+        modo = Modo()
+        if sdl.SDL_GetCurrentDisplayMode(0, ctypes.byref(modo)) == 0 and modo.hz > 0:
+            # Modos 59/59,94 Hz são tratados como a família nominal de 60 Hz.
+            return 60 if 59 <= modo.hz <= 60 else modo.hz
+    except (OSError, AttributeError):
+        pass
+    return 60
 
 
 def criar_janela():

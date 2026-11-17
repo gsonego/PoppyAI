@@ -10,7 +10,7 @@ from art.cenario import CREME, ROSA, TINTA, criar_faixa_chao, desenhar_chao, ter
 from art.animacao_poppy import carregar_corrida, quadro_corrida
 from art.fonte_pixel import FontePixel
 from config import ALTURA, CHAO_Y, LARGURA, POPPY_DESLOCAMENTO_VISUAL_X
-from janela import apresentar
+from janela import apresentar, estado_apresentacao
 from politica import decidir_salto, limiar_salto
 
 OPCOES_MENU = (("humano", "JOGAR"), ("treino", "TREINAR IA"), ("avaliacao", "VER A IA JOGAR"))
@@ -46,7 +46,7 @@ class RecursosInterface:
         if self.mostrar_diagnostico and self.relogio is not None:
             fps, media, p95 = self.relogio.resumo()
             pygame.draw.rect(tela, CREME, (232, 72, 660, 22))
-            self.texto(tela, f"FPS {fps:.1f} / QUADRO {media:.2f} MS / P95 {p95:.2f} MS / FISICA 60 HZ",
+            self.texto(tela, f"FPS {fps:.1f} / QUADRO {media:.2f} MS / P95 {p95:.2f} MS / {estado_apresentacao()}",
                        240, 80, escala=1)
 
     def desenhar_fundo(self, tela, distancia=0):

@@ -166,10 +166,21 @@ nunca altera a física, as entradas da IA ou a pontuação e adiciona até um pa
 de latência visual. Ao morrer ou reiniciar, o estado visual é fixado para não
 interpolar uma colisão ou o reinício da pista inteira.
 
+A apresentação solicita o renderer escalado do SDL com VSync. A textura lógica
+de 900 × 400 é ampliada pelo renderer com pixels nítidos e proporção preservada.
+O mesmo caminho é mantido em tela cheia e ao alternar com F11. O SDL já entrega
+coordenadas lógicas do mouse nesse modo. Se o renderer não puder ser criado,
+o jogo usa a apresentação anterior com ampliação por CPU e limite pelo relógio.
+Quando o renderer informa aceleração e VSync, o relógio não acrescenta uma
+segunda espera: a apresentação acompanha a sincronização do driver.
+
 `F3` mostra ou esconde FPS de apresentação, tempo médio por quadro e P95
 (tempo abaixo do qual ficam 95% dos quadros recentes). A janela de medição tem
 até 240 amostras. Essa medição inclui o tempo real gasto entre quadros, mas não
-mede a entrega de imagens pelo monitor nem ativa VSync. A pixel art continua
+mede a entrega final de imagens pelo monitor. O painel também mostra o estado:
+`VSYNC ATIVO` quando o renderer informa aceleração e sincronização, `VSYNC
+SOLICITADO` quando o modo escalado abriu sem confirmação, ou `SEM VSYNC` no
+caminho anterior. O suporte efetivo depende do driver. A pixel art continua
 sem suavização: as posições finais são arredondadas para pixels lógicos.
 Pausas do sistema acima de 0,25 segundo são limitadas ao retomar a simulação,
 evitando uma fila enorme de atualizações. Pesos e recordes permanecem compatíveis.

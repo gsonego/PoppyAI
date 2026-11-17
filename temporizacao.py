@@ -4,6 +4,7 @@ from collections import deque
 from time import perf_counter, sleep
 
 from config import PASSO
+from janela import vsync_ativo
 
 
 class RelogioQuadros:
@@ -19,7 +20,7 @@ class RelogioQuadros:
 
     def tick(self):
         restante = self.proximo - perf_counter()
-        if restante > 0:
+        if restante > 0 and not vsync_ativo():
             sleep(restante)
         agora = perf_counter()
         decorrido = agora - self.anterior

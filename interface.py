@@ -9,6 +9,7 @@ from apresentacao import VistaAmbiente
 from art.cenario import CREME, ROSA, TINTA, PaisagemParalaxe, criar_faixa_chao, desenhar_chao
 from art.animacao_poppy import carregar_corrida, quadro_corrida
 from art.bumerangue import criar_quadros, quadro_bumerangue
+from art.passarinho import criar_quadros as criar_passarinhos, quadro_passarinho
 from art.fonte_pixel import FontePixel
 from config import ALTURA, CHAO_Y, LARGURA, POPPY_DESLOCAMENTO_VISUAL_X
 from janela import apresentar, estado_apresentacao
@@ -29,6 +30,7 @@ class RecursosInterface:
         self.paisagem = PaisagemParalaxe()
         self.faixa_chao = criar_faixa_chao()
         self.bumerangues = criar_quadros()
+        self.passarinhos = criar_passarinhos()
         caminho = Path(__file__).resolve().parent / "art" / "source" / "poppy-aprovada.png"
         imagem = pygame.image.load(caminho).convert_alpha()
         self.poppy = imagem.subsurface(imagem.get_bounding_rect(min_alpha=128))
@@ -65,6 +67,9 @@ class RecursosInterface:
         quadro = self.bumerangues[quadro_bumerangue(ambiente.distancia_percorrida)]
         for bumerangue in ambiente.bumerangues_visiveis:
             tela.blit(quadro, quadro.get_rect(center=bumerangue.center))
+        quadro = self.passarinhos[quadro_passarinho(ambiente.distancia_percorrida)]
+        for passarinho in ambiente.passarinhos_visiveis:
+            tela.blit(quadro, quadro.get_rect(center=passarinho.center))
 
     def sprite_corrida(self, altura, indice):
         chave = ("corrida", altura, indice)

@@ -31,9 +31,16 @@ class VistaAmbiente:
 
     @property
     def bumerangues_visiveis(self):
+        return self._voadores_visiveis("bumerangue")
+
+    @property
+    def passarinhos_visiveis(self):
+        return self._voadores_visiveis("passarinho")
+
+    def _voadores_visiveis(self, tipo):
         retangulos = []
         for grupo in self._ambiente.grupos:
-            if grupo.tipo != "bumerangue":
+            if grupo.tipo != tipo:
                 continue
             retangulo = grupo.retangulo.copy()
             retangulo.x = round(grupo.x + self._deslocamento)

@@ -107,7 +107,8 @@ def jogar(tela, recursos, relogio, modo, semente):
         sessao = JogoHumano() if modo == "humano" else Avaliacao(semente=semente)
         if modo == "avaliacao":
             semente = sessao.semente
-        ambiente = Ambiente(semente, incluir_bumerangues=modo == "humano")
+        ambiente = Ambiente(semente, incluir_bumerangues=modo == "humano",
+                            incluir_passarinhos=modo == "humano")
         pygame.display.set_caption(f"PoppyAI — {modo}")
         detalhes = False
         avanco = AvancoFixo()

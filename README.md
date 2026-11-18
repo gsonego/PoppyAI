@@ -43,20 +43,29 @@ de 48 × 56 para 48 × 32 pixels, com a mesma largura e apoio no chão. Abaixada
 ela não salta. No ar, mantém a pose de salto; se continuar segurando ao pousar,
 ela abaixa. Perder o foco da janela libera o comando; R reinicia em pé.
 A pose abaixada também fica vermelha na colisão. Nesta etapa só o humano
-recebe esse comando; a adaptação da IA e o passarinho alto ficam para depois.
+recebe esse comando; a adaptação da IA fica para depois.
 A corrida abaixada usa quatro poses de patas, guiadas pelos mesmos 32 pixels
 percorridos por quadro da corrida em pé. Ao colidir, congela no quadro atual,
 com a cor vermelha. A animação mantém a área de colisão de 48 × 32 pixels.
 
 O humano também enfrenta bumerangues baixos de 32 × 32 pixels, com centro
 56 pixels acima do chão. Atingem a Poppy em pé, mas passam acima dela abaixada.
-O primeiro desafio é uma caixa e o segundo um bumerangue; depois há uma chance
-de 1/3 de sortear bumerangue, com caixas nos demais sorteios. Os intervalos e
+O primeiro desafio é uma caixa, o segundo um bumerangue e o terceiro um passarinho.
+Depois, há uma chance de 1/4 de sortear passarinho e, nos demais sorteios,
+1/3 de escolher bumerangue, com caixas nas opções restantes. Os intervalos e
 a aceleração são os mesmos do restante da partida. Segure `↓` até ele passar.
 Eles giram e atravessam em linha reta da direita para a esquerda, sem retorno.
 R repete a mesma sequência. A arte original está em `art/bumerangue.py`, com
 a folha de poses exportada em `art/source/bumerangue.png`. O treino e a avaliação
 continuam somente com caixas; as campeãs salvas permanecem compatíveis.
+
+O passarinho azul alto cruza para a esquerda, com quatro poses de asas. Ele
+passa acima das orelhas da Poppy correndo; um salto desnecessário pode causar
+colisão. Seu centro fica 104 pixels acima do chão, com colisão de 40 × 24 pixels.
+As asas são decorativas e a colisão não oscila entre poses. Correr ou abaixar
+permite passar. A arte está em `art/passarinho.py` e `art/source/passarinho.png`.
+O espaço mínimo entre desafios permanece o mesmo, sem misturar voadores e
+caixas na mesma posição.
 
 No modo humano, a colisão mantém o resultado na tela; `R` repete a partida.
 A Poppy fica vermelha ao colidir no humano e na avaliação e permanece assim

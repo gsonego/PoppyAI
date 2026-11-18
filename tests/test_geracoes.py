@@ -1,5 +1,7 @@
 """Seleção, eliminação, persistência e controles do treino visual de 50 Poppys."""
 
+from tests.apoio import rede_simples
+
 import contextlib
 import io
 import json
@@ -34,7 +36,7 @@ class TestGeracoes(unittest.TestCase):
         self.assertEqual(len({p.parametros for p in self.treino.individuos}), 50)
 
     def test_reabre_na_geracao_salva_sem_precisar_bater_recorde(self):
-        parametros = (-1.5, 0.7, -0.4, 0.0, 0.45)
+        parametros = rede_simples((-1.5, 0.7, -0.4, 0.0, 0.45))
         salvar_campeao(self.caminho, parametros, 120, None, SEMENTE_TREINO, 42)
         with contextlib.redirect_stdout(io.StringIO()):
             treino = TreinoGeracoes(self.caminho)
@@ -47,7 +49,7 @@ class TestGeracoes(unittest.TestCase):
         self.assertEqual(json.loads(self.caminho.read_text())["geracao"], 43)
 
     def test_saida_preserva_geracao_e_campea_sem_melhora(self):
-        parametros = (-1.5, 0.7, -0.4, 0.0, 0.45)
+        parametros = rede_simples((-1.5, 0.7, -0.4, 0.0, 0.45))
         salvar_campeao(self.caminho, parametros, 120, None, SEMENTE_TREINO, 42)
         with contextlib.redirect_stdout(io.StringIO()):
             treino = TreinoGeracoes(self.caminho)
@@ -59,7 +61,7 @@ class TestGeracoes(unittest.TestCase):
         self.assertEqual(reaberto.melhores_parametros, parametros)
 
     def test_arquivo_antigo_sem_geracao_comeca_em_um(self):
-        salvar_campeao(self.caminho, (-1, 0, 0, 0, 0), 10, None, SEMENTE_TREINO)
+        salvar_campeao(self.caminho, rede_simples((-1, 0, 0, 0, 0)), 10, None, SEMENTE_TREINO)
         dados = json.loads(self.caminho.read_text())
         del dados["geracao"]
         self.caminho.write_text(json.dumps(dados))
@@ -68,7 +70,7 @@ class TestGeracoes(unittest.TestCase):
         self.assertEqual(treino.geracao, 1)
 
     def test_outro_experimento_inicia_busca_sem_comparar_recordes(self):
-        salvar_campeao(self.caminho, (-1, 0, 0, 0, 0), 1000, None, SEMENTE_TREINO, 42)
+        salvar_campeao(self.caminho, rede_simples((-1, 0, 0, 0, 0)), 1000, None, SEMENTE_TREINO, 42)
         dados = json.loads(self.caminho.read_text())
         dados["experimento"]["versao"] -= 1
         self.caminho.write_text(json.dumps(dados))
@@ -82,7 +84,7 @@ class TestGeracoes(unittest.TestCase):
         self.assertEqual(carregar_campeao(self.caminho, None, SEMENTE_TREINO)[1], 0)
 
     def test_rejeita_geracao_invalida(self):
-        salvar_campeao(self.caminho, (-1, 0, 0, 0, 0), 10, None, SEMENTE_TREINO)
+        salvar_campeao(self.caminho, rede_simples((-1, 0, 0, 0, 0)), 10, None, SEMENTE_TREINO)
         dados = json.loads(self.caminho.read_text())
         for valor in (0, -1, 1.5, True, "42"):
             dados["geracao"] = valor
@@ -91,7 +93,7 @@ class TestGeracoes(unittest.TestCase):
                 carregar_campeao(self.caminho, None, SEMENTE_TREINO)
 
     def test_campea_existente_entra_na_populacao_sem_alterar_arquivo(self):
-        parametros = (-1.5, 0.7, -0.4, 0.0, 0.45)
+        parametros = rede_simples((-1.5, 0.7, -0.4, 0.0, 0.45))
         salvar_campeao(self.caminho, parametros, 120, None, SEMENTE_TREINO)
         original = self.caminho.read_bytes()
         with contextlib.redirect_stdout(io.StringIO()):

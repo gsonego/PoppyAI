@@ -1,4 +1,6 @@
-"""Verificações da política de quatro entradas e do ciclo de treino/avaliação."""
+"""Verificações da rede com cinco entradas e do ciclo de treino/avaliação."""
+
+from tests.apoio import rede_simples
 
 import contextlib
 import io
@@ -18,40 +20,9 @@ from ambiente import Ambiente
 from avaliacao import Avaliacao
 from campeao import carregar_campeao, salvar_campeao
 from config import ALTURA, LARGURA, LIMITE_TENTATIVA, SEMENTE_TREINO
-from politica import decidir_salto, limiar_salto
+from politica import aplicar_politica, QUANTIDADE_PARAMETROS
 from treino import Treino
 from geracoes import TreinoGeracoes
-
-
-class TestPolitica(unittest.TestCase):
-    def test_largura_maior_pode_adiar_salto_sem_mudar_distancia_ou_altura(self):
-        parametros = (-1, 0, -1, 0, 0.3)
-        self.assertTrue(decidir_salto(200, 50, 40, 350, parametros))
-        self.assertFalse(decidir_salto(200, 50, 80, 350, parametros))
-        self.assertTrue(decidir_salto(180, 50, 80, 350, parametros))
-        self.assertLess(limiar_salto(50, 80, 350, parametros), limiar_salto(50, 40, 350, parametros))
-
-    def test_altura_pode_mudar_a_decisao_na_mesma_distancia(self):
-        parametros = (-1.0, 2.0, 0.0, 0.0, 0.0)
-        self.assertFalse(decidir_salto(LARGURA / 4, ALTURA / 16, 30, 350, parametros))
-        self.assertTrue(decidir_salto(LARGURA / 4, ALTURA / 4, 30, 350, parametros))
-
-    def test_limiar_acompanha_altura_e_sentido_do_peso(self):
-        for peso in (-2.0, 2.0):
-            parametros = (peso, 1.0, 0.0, 0.0, -0.5 if peso > 0 else 0.5)
-            for altura in (30, 50, 70):
-                limiar = limiar_salto(altura, 30, 350, parametros)
-                self.assertEqual(decidir_salto(limiar - 1, altura, 30, 350, parametros), peso < 0)
-                self.assertEqual(decidir_salto(limiar + 1, altura, 30, 350, parametros), peso > 0)
-
-    def test_degrau_nao_dispara_no_zero(self):
-        self.assertFalse(decidir_salto(LARGURA / 2, ALTURA / 2, 30, 350, (-1, 1, 0, 0, 0)))
-
-    def test_peso_distancia_zero_ainda_considera_altura(self):
-        parametros = (0, 1, 0, 0, -0.125)
-        self.assertIsNone(limiar_salto(70, 30, 350, parametros))
-        self.assertFalse(decidir_salto(100, 30, 30, 350, parametros))
-        self.assertTrue(decidir_salto(100, 70, 30, 350, parametros))
 
 
 class TestCiclo(unittest.TestCase):
@@ -60,15 +31,15 @@ class TestCiclo(unittest.TestCase):
         self.addCleanup(self.temporario.cleanup)
         self.caminho = Path(self.temporario.name) / "campeao.json"
 
-    def test_salva_e_carrega_cinco_parametros(self):
-        parametros = (-1.2, 0.7, 0.2, 0.0, 0.4)
+    def test_salva_e_carrega_rede_completa(self):
+        parametros = rede_simples((-1.2, 0.7, 0.2, 0.0, 0.4))
         salvar_campeao(self.caminho, parametros, 12.5, LIMITE_TENTATIVA, SEMENTE_TREINO)
         self.assertEqual(
             carregar_campeao(self.caminho, LIMITE_TENTATIVA, SEMENTE_TREINO),
             (parametros, 12.5),
         )
         dados = json.loads(self.caminho.read_text(encoding="utf-8"))
-        del dados["peso_altura"]
+        del dados["parametros"]
         self.caminho.write_text(json.dumps(dados), encoding="utf-8")
         with self.assertRaises(ValueError):
             carregar_campeao(self.caminho, LIMITE_TENTATIVA, SEMENTE_TREINO)
@@ -76,23 +47,24 @@ class TestCiclo(unittest.TestCase):
     def test_rejeita_peso_largura_ausente_ou_invalido(self):
         for valor in (None, "0.2", float("nan"), float("inf")):
             with self.subTest(valor=valor):
-                salvar_campeao(self.caminho, (-1, 0.7, 0.2, 0.0, 0.4), 12.5, None, SEMENTE_TREINO)
+                salvar_campeao(self.caminho, rede_simples((-1, 0.7, 0.2, 0.0, 0.4)), 12.5, None, SEMENTE_TREINO)
                 dados = json.loads(self.caminho.read_text(encoding="utf-8"))
                 if valor is None:
-                    del dados["peso_largura"]
+                    del dados["parametros"][2]
                 else:
-                    dados["peso_largura"] = valor
+                    dados["parametros"][2] = valor
                 self.caminho.write_text(json.dumps(dados), encoding="utf-8")
                 with self.assertRaises(ValueError):
                     carregar_campeao(self.caminho, None, SEMENTE_TREINO)
 
-    def test_mutacao_inclui_peso_da_largura(self):
+    def test_mutacao_inclui_todos_os_parametros(self):
         with contextlib.redirect_stdout(io.StringIO()):
             treino = Treino(self.caminho)
-        treino.melhores_parametros = (1, 2, 3, 4, 5)
+        treino.melhores_parametros = tuple(range(QUANTIDADE_PARAMETROS))
         with patch.object(treino.sorteio, "random", return_value=0.5), \
-                patch.object(treino.sorteio, "gauss", side_effect=(0.1, 0.2, 0.3, 0.4, 0.5)):
-            self.assertEqual(treino._proxima_candidata(), (1.1, 2.2, 3.3, 4.4, 5.5))
+                patch.object(treino.sorteio, "gauss", return_value=0.1):
+            self.assertEqual(treino._proxima_candidata(),
+                             tuple(p + 0.1 for p in treino.melhores_parametros))
 
     def test_so_termina_na_colisao_e_salva_tempo_acima_de_30(self):
         with contextlib.redirect_stdout(io.StringIO()):
@@ -122,7 +94,7 @@ class TestCiclo(unittest.TestCase):
             self.assertIsNone(dados["experimento"]["limite_segundos"])
 
     def test_preserva_campea_do_antigo_limite_de_30_segundos(self):
-        parametros = (-1.5, 0.1, 0.2, 0.0, 0.5)
+        parametros = rede_simples((-1.5, 0.1, 0.2, 0.0, 0.5))
         salvar_campeao(self.caminho, parametros, 30.0, 30.0, SEMENTE_TREINO)
         original = self.caminho.read_bytes()
         self.assertEqual(
@@ -173,7 +145,7 @@ class TestCiclo(unittest.TestCase):
             self.assertAlmostEqual(reaberto.melhor_tempo, 0.5)
 
     def test_rejeita_tempo_negativo_sem_teto(self):
-        salvar_campeao(self.caminho, (-1.5, 0.1, 0.2, 0.0, 0.5), -1, None, SEMENTE_TREINO)
+        salvar_campeao(self.caminho, rede_simples((-1.5, 0.1, 0.2, 0.0, 0.5)), -1, None, SEMENTE_TREINO)
         with self.assertRaises(ValueError):
             carregar_campeao(self.caminho, None, SEMENTE_TREINO)
 
@@ -190,25 +162,21 @@ class TestCiclo(unittest.TestCase):
     def test_treino_salva_e_avaliacao_repete_sem_alterar_campea(self):
         with contextlib.redirect_stdout(io.StringIO()):
             treino = Treino(self.caminho)
-            self.assertEqual(len(treino.parametros), 5)
-            ambiente = Ambiente(SEMENTE_TREINO)
+            self.assertEqual(len(treino.parametros), QUANTIDADE_PARAMETROS)
+            ambiente = Ambiente(SEMENTE_TREINO, incluir_tuneis=True, incluir_passarinhos=True)
             while not treino.terminou(ambiente):
-                ambiente.avancar(decidir_salto(
-                    ambiente.distancia, ambiente.obstaculo.height, ambiente.obstaculo.width, ambiente.velocidade, treino.parametros,
-                ))
+                aplicar_politica(ambiente, treino.parametros)
             parametros_testados = treino.parametros
             treino.concluir_tentativa(ambiente)
-            self.assertEqual(len(treino.parametros), 5)
+            self.assertEqual(len(treino.parametros), QUANTIDADE_PARAMETROS)
             original = self.caminho.read_bytes()
             resultados = []
             for _ in range(2):
                 avaliacao = Avaliacao(self.caminho, semente=456)
                 self.assertEqual(avaliacao.parametros, parametros_testados)
-                ambiente = Ambiente(avaliacao.semente)
+                ambiente = Ambiente(avaliacao.semente, incluir_tuneis=True, incluir_passarinhos=True)
                 while not avaliacao.terminou(ambiente):
-                    ambiente.avancar(decidir_salto(
-                        ambiente.distancia, ambiente.obstaculo.height, ambiente.obstaculo.width, ambiente.velocidade, avaliacao.parametros,
-                    ))
+                    aplicar_politica(ambiente, avaliacao.parametros)
                 avaliacao.concluir_tentativa(ambiente)
                 resultados.append((ambiente.tempo_vivo, ambiente.fim_de_jogo))
                 self.assertEqual(avaliacao.parametros, parametros_testados)

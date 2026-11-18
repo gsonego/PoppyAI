@@ -1,5 +1,7 @@
 """Aceleração reproduzível, observação da IA e obstáculos possíveis até o teto."""
 
+from tests.apoio import rede_simples
+
 import contextlib
 import io
 import json
@@ -11,7 +13,7 @@ from ambiente import Ambiente
 from campeao import carregar_campeao, salvar_campeao
 from config import ACELERACAO_OBSTACULO, CHAO_Y, PASSO, SEMENTE_TREINO, VELOCIDADE_MAXIMA, VELOCIDADE_OBSTACULO
 from geracoes import TreinoGeracoes
-from politica import decidir_salto, limiar_salto
+from politica import calcular_saidas
 
 
 class TestVelocidade(unittest.TestCase):
@@ -39,10 +41,9 @@ class TestVelocidade(unittest.TestCase):
         self.assertEqual(ambiente.velocidade, velocidade)
 
     def test_velocidade_pode_antecipar_salto_na_mesma_distancia(self):
-        parametros = (-1, 0, 0, 1, -0.5)
-        self.assertFalse(decidir_salto(200, 50, 40, 350, parametros))
-        self.assertTrue(decidir_salto(200, 50, 40, 650, parametros))
-        self.assertGreater(limiar_salto(50, 40, 650, parametros), limiar_salto(50, 40, 350, parametros))
+        parametros = rede_simples((-1, 0, 0, 1, -0.5))
+        self.assertLess(calcular_saidas((200/900, 50/400, 40/900, 350/650, 0), parametros)[0], 0)
+        self.assertGreater(calcular_saidas((200/900, 50/400, 40/900, 1, 0), parametros)[0], 0)
 
     def test_50_poppys_compartilham_aceleracao_e_sequencia(self):
         with tempfile.TemporaryDirectory() as pasta, contextlib.redirect_stdout(io.StringIO()):
@@ -62,11 +63,11 @@ class TestVelocidade(unittest.TestCase):
     def test_campea_preserva_peso_velocidade_e_rejeita_valor_ausente(self):
         with tempfile.TemporaryDirectory() as pasta:
             caminho = Path(pasta) / "dados" / "campeoes" / "campeao.json"
-            parametros = (-1.5, 0.7, -0.4, 0.25, 0.45)
+            parametros = rede_simples((-1.5, 0.7, -0.4, 0.25, 0.45))
             salvar_campeao(caminho, parametros, 150, None, SEMENTE_TREINO)
             self.assertEqual(carregar_campeao(caminho, None, SEMENTE_TREINO), (parametros, 150))
             dados = json.loads(caminho.read_text(encoding="utf-8"))
-            del dados["peso_velocidade"]
+            del dados["parametros"][3]
             caminho.write_text(json.dumps(dados), encoding="utf-8")
             with self.assertRaises(ValueError):
                 carregar_campeao(caminho, None, SEMENTE_TREINO)

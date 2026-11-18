@@ -1,5 +1,7 @@
 """Sorteio, repetição e troca de sequências sem alterar a campeã."""
 
+from tests.apoio import rede_simples
+
 import contextlib
 import io
 import os
@@ -23,7 +25,7 @@ class TestAvaliacao(unittest.TestCase):
         pasta = tempfile.TemporaryDirectory()
         self.addCleanup(pasta.cleanup)
         self.caminho = Path(pasta.name) / "campeao.json"
-        self.parametros = (-1.5, 0.7, 0.2, 0.0, 0.5)
+        self.parametros = rede_simples((-1.5, 0.7, 0.2, 0.0, 0.5))
         salvar_campeao(self.caminho, self.parametros, 120, None, SEMENTE_TREINO)
 
     def test_sorteio_exclui_treino_e_semente_anterior(self):

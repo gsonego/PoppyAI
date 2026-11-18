@@ -12,7 +12,7 @@ from diagnostico import registrar_execucao, registro
 from humano import JogoHumano
 from interface import OPCOES_MENU, RecursosInterface, botoes_menu, desenhar, desenhar_menu, desenhar_populacao
 from janela import criar_janela, posicao_logica, taxa_atualizacao, tratar_redimensionamento
-from politica import decidir_salto
+from politica import aplicar_politica
 from geracoes import TreinoGeracoes
 from temporizacao import AvancoFixo, RelogioQuadros
 
@@ -107,8 +107,8 @@ def jogar(tela, recursos, relogio, modo, semente):
         sessao = JogoHumano() if modo == "humano" else Avaliacao(semente=semente)
         if modo == "avaliacao":
             semente = sessao.semente
-        ambiente = Ambiente(semente, incluir_bumerangues=modo == "humano",
-                            incluir_passarinhos=modo == "humano")
+        ambiente = Ambiente(semente, incluir_tuneis=True, incluir_passarinhos=True,
+                            incluir_pedras=True)
         pygame.display.set_caption(f"PoppyAI — {modo}")
         detalhes = False
         avanco = AvancoFixo()
@@ -147,14 +147,11 @@ def jogar(tela, recursos, relogio, modo, semente):
             for _ in range(avanco.acumular(segundos)):
                 if sessao.concluida:
                     break
-                pedir_salto = False
-                if modo == "avaliacao":
-                    pedir_salto = decidir_salto(
-                        ambiente.distancia, ambiente.obstaculo.height,
-                        ambiente.obstaculo.width, ambiente.velocidade, sessao.parametros,
-                    )
                 estava_no_chao = ambiente.no_chao
-                ambiente.avancar(pedir_salto)
+                if modo == "avaliacao":
+                    aplicar_politica(ambiente, sessao.parametros)
+                else:
+                    ambiente.avancar(False)
                 if modo == "avaliacao" and estava_no_chao and not ambiente.no_chao:
                     recursos.sons.tocar("salto")
                 if sessao.terminou(ambiente):

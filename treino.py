@@ -3,6 +3,7 @@
 import random
 
 from campeao import carregar_campeao, salvar_campeao
+from politica import DESVIOS_MUTACAO
 from config import (
     ARQUIVO_CAMPEAO, LIMITE_TENTATIVA, SEMENTE_PARAMETROS, SEMENTE_TREINO,
 )
@@ -32,33 +33,17 @@ class Treino:
         self._anunciar_tentativa()
 
     def _anunciar_tentativa(self):
-        peso_distancia, peso_altura, peso_largura, peso_velocidade, vies = self.parametros
-        print(
-            f"Tentativa {self.tentativa}: peso_distancia={peso_distancia:.3f}, "
-            f"peso_altura={peso_altura:.3f}, peso_largura={peso_largura:.3f}, "
-            f"peso_velocidade={peso_velocidade:.3f}, vies={vies:.3f}"
-        )
+        print(f"Tentativa {self.tentativa}: rede 5/4/2, {len(self.parametros)} parâmetros")
 
     def _sortear_parametros(self):
-        return (
-            self.sorteio.uniform(-2.0, 2.0),
-            self.sorteio.uniform(-2.0, 2.0),
-            self.sorteio.uniform(-2.0, 2.0),
-            self.sorteio.uniform(-2.0, 2.0),
-            self.sorteio.uniform(-1.0, 1.0),
-        )
+        return tuple(self.sorteio.uniform(-1.0, 1.0) if desvio == 0.10
+                     else self.sorteio.uniform(-2.0, 2.0) for desvio in DESVIOS_MUTACAO)
 
     def _proxima_candidata(self):
         if self.melhores_parametros is None or self.sorteio.random() < 0.20:
             return self._sortear_parametros()
-        peso_distancia, peso_altura, peso_largura, peso_velocidade, vies = self.melhores_parametros
-        return (
-            peso_distancia + self.sorteio.gauss(0.0, 0.20),
-            peso_altura + self.sorteio.gauss(0.0, 0.20),
-            peso_largura + self.sorteio.gauss(0.0, 0.20),
-            peso_velocidade + self.sorteio.gauss(0.0, 0.20),
-            vies + self.sorteio.gauss(0.0, 0.10),
-        )
+        return tuple(peso + self.sorteio.gauss(0, desvio)
+                     for peso, desvio in zip(self.melhores_parametros, DESVIOS_MUTACAO))
 
     def terminou(self, ambiente):
         return ambiente.fim_de_jogo

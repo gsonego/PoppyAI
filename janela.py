@@ -10,6 +10,19 @@ from config import ALTURA, LARGURA
 
 _tamanho_janela = (1350, 600)
 _modo_escalado = False
+# Pygame 2.6.1 guarda um ponteiro emprestado para este objeto nos eventos SDL.
+# Ele precisa continuar vivo depois da consulta, até ser substituído por outro.
+_janela_sdl = None
+
+
+def _obter_janela_sdl():
+    global _janela_sdl
+    from pygame._sdl2 import Window
+    # Registra a nova referência no SDL ANTES de soltar a anterior. Não retornar
+    # apenas Window.from_display_module().id: isso deixa pg_window pendurado.
+    nova = Window.from_display_module()
+    _janela_sdl = nova
+    return nova
 
 
 def _consulta_renderer():
@@ -17,8 +30,6 @@ def _consulta_renderer():
     if not pygame.display.get_init() or pygame.display.get_surface() is None:
         return None
     try:
-        from pygame._sdl2 import Window
-
         class Info(ctypes.Structure):
             _fields_ = [("nome", ctypes.c_char_p), ("flags", ctypes.c_uint32),
                         ("quantidade", ctypes.c_uint32), ("formatos", ctypes.c_uint32 * 16),
@@ -31,7 +42,7 @@ def _consulta_renderer():
         sdl.SDL_GetRenderer.restype = ctypes.c_void_p
         sdl.SDL_GetRendererInfo.argtypes = [ctypes.c_void_p, ctypes.POINTER(Info)]
         sdl.SDL_GetRendererInfo.restype = ctypes.c_int
-        janela = sdl.SDL_GetWindowFromID(Window.from_display_module().id)
+        janela = sdl.SDL_GetWindowFromID(_obter_janela_sdl().id)
         renderer = sdl.SDL_GetRenderer(janela)
         if not renderer:
             return None
@@ -73,9 +84,9 @@ def _abrir_modo(tela_cheia, tamanho_janela=None):
         try:
             os.environ.setdefault("SDL_RENDER_SCALE_QUALITY", "0")
             pygame.display.set_mode((LARGURA, ALTURA), flags | pygame.SCALED, vsync=1)
+            janela_sdl = _obter_janela_sdl()
             if not tela_cheia and tamanho_janela is not None:
-                from pygame._sdl2 import Window
-                Window.from_display_module().size = tamanho_janela
+                janela_sdl.size = tamanho_janela
             _modo_escalado = True
             return
         except (pygame.error, ImportError):
@@ -139,7 +150,13 @@ def posicao_logica(posicao):
 
 def tratar_redimensionamento(evento):
     global _tamanho_janela
+    if evento.type != pygame.VIDEORESIZE and not (
+        evento.type == pygame.KEYDOWN and evento.key == pygame.K_F11
+    ):
+        return
     janela = pygame.display.get_surface()
+    if janela is None:
+        return
     tela_cheia = bool(janela.get_flags() & pygame.FULLSCREEN)
     if evento.type == pygame.KEYDOWN and evento.key == pygame.K_F11:
         if tela_cheia:

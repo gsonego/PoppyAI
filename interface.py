@@ -8,12 +8,13 @@ from apresentacao import VistaAmbiente
 
 from art.cenario import CREME, ROSA, TINTA, PaisagemParalaxe, criar_faixa_chao, desenhar_chao
 from art.animacao_poppy import carregar_corrida, quadro_corrida
-from art.bumerangue import criar_quadros, quadro_bumerangue
+from art.tunel import carregar_tuneis
+from art.pedra import criar_sprite as criar_pedra
 from art.passarinho import criar_quadros as criar_passarinhos, quadro_passarinho
 from art.fonte_pixel import FontePixel
 from config import ALTURA, CHAO_Y, LARGURA, POPPY_DESLOCAMENTO_VISUAL_X
 from janela import apresentar, estado_apresentacao
-from politica import decidir_salto, limiar_salto
+from politica import calcular_saidas, decidir_acoes, observar
 from sons import Sons
 
 OPCOES_MENU = (("humano", "JOGAR"), ("treino", "TREINAR IA"), ("avaliacao", "VER A IA JOGAR"))
@@ -29,9 +30,10 @@ class RecursosInterface:
         self.sons = Sons()
         self.paisagem = PaisagemParalaxe()
         self.faixa_chao = criar_faixa_chao()
-        self.bumerangues = criar_quadros()
         self.passarinhos = criar_passarinhos()
+        self.pedra = criar_pedra()
         caminho = Path(__file__).resolve().parent / "art" / "source" / "poppy-aprovada.png"
+        self.tuneis = carregar_tuneis(caminho.with_name("tunel.png"))
         imagem = pygame.image.load(caminho).convert_alpha()
         self.poppy = imagem.subsurface(imagem.get_bounding_rect(min_alpha=128))
         imagem_atingida = pygame.image.load(caminho.with_name("poppy-atingida.png")).convert_alpha()
@@ -62,11 +64,12 @@ class RecursosInterface:
         desenhar_chao(tela, self.faixa_chao, distancia)
 
     def desenhar_obstaculos(self, tela, ambiente):
+        for pedra in ambiente.pedras_visiveis:
+            tela.blit(self.pedra, pedra.topleft)
         for caixa in ambiente.caixas_visiveis:
             desenhar_caixa(tela, caixa)
-        quadro = self.bumerangues[quadro_bumerangue(ambiente.distancia_percorrida)]
-        for bumerangue in ambiente.bumerangues_visiveis:
-            tela.blit(quadro, quadro.get_rect(center=bumerangue.center))
+        for tunel in ambiente.tuneis_visiveis:
+            tela.blit(self.tuneis[tunel.width], tunel.topleft)
         quadro = self.passarinhos[quadro_passarinho(ambiente.distancia_percorrida)]
         for passarinho in ambiente.passarinhos_visiveis:
             tela.blit(quadro, quadro.get_rect(center=passarinho.center))
@@ -156,40 +159,30 @@ def desenhar_caixa(tela, retangulo):
 
 
 def desenhar_decisao(tela, recursos, ambiente, sessao, modo, mostrar_sensor=True):
-    peso_distancia, peso_altura, peso_largura, peso_velocidade, vies = sessao.parametros
-    altura = ambiente.obstaculo.height
-    largura = ambiente.obstaculo.width
-    limiar = limiar_salto(altura, largura, ambiente.velocidade, sessao.parametros)
-    pedido = decidir_salto(ambiente.distancia, altura, largura, ambiente.velocidade, sessao.parametros)
-    if peso_distancia == 0:
-        regra = "PEDIDO INDEPENDE DA DISTANCIA NESTE CONJUNTO"
-    elif limiar is None:
-        regra = "LIMIAR FORA DA ESCALA DE EXIBICAO"
-    else:
-        sentido = "ABAIXO" if peso_distancia < 0 else "ACIMA"
-        regra = f"SALTA {sentido} DE {limiar:.1f} PX NESTE CONJUNTO"
+    salto, abaixar = decidir_acoes(ambiente, sessao.parametros)
+    z_salto, z_baixo = calcular_saidas(observar(ambiente), sessao.parametros)
+    acao = "ABAIXAR" if abaixar else "SALTAR" if salto else "CORRER"
     linhas = [
-        f"PESO DIST {peso_distancia:+.3f} / ALT {peso_altura:+.3f} / LARG {peso_largura:+.3f} / VEL {peso_velocidade:+.3f} / VIES {vies:+.3f}",
-        f"DIST {ambiente.distancia} PX / ALT {altura} PX / LARG {ambiente.obstaculo.width} PX / {'SALTAR' if pedido else 'ESPERAR'}",
-        regra,
+        f"DIST {ambiente.distancia} / ALT {ambiente.obstaculo.height} / LARG {ambiente.obstaculo.width} / VEL {ambiente.velocidade:.0f} / ELEV {ambiente.elevacao_obstaculo}",
+        f"Z SALTO {z_salto:+.3f} / Z ABAIXAR {z_baixo:+.3f} / ACAO {acao} / PRIORIDADE ABAIXAR",
     ]
+    for indice in range(4):
+        pesos = sessao.parametros[indice * 6:(indice + 1) * 6]
+        linhas.append(f"H{indice + 1} (D A L V E B): " + " / ".join(f"{p:+.3f}" for p in pesos))
+    for indice, nome in enumerate(("SALTO", "ABAIXAR")):
+        pesos = sessao.parametros[24 + indice * 5:29 + indice * 5]
+        linhas.append(f"{nome} (H1 H2 H3 H4 B): " + " / ".join(f"{p:+.3f}" for p in pesos))
     if modo == "avaliacao":
         linhas.append(f"SEMENTE {sessao.semente} / PARAMETROS FIXOS")
-    elif ambiente.tentativa_manual:
-        linhas.append("INTERVENCAO MANUAL / FORA DO RECORDE")
-    pygame.draw.rect(tela, "#80BBC4", (28, 104, 848, 106))
-    pygame.draw.rect(tela, CREME, (24, 100, 848, 106))
-    recursos.texto(tela, "DECISAO DA POPPY", 40, 110, ROSA, 1)
+    pygame.draw.rect(tela, "#80BBC4", (28, 104, 848, 142))
+    pygame.draw.rect(tela, CREME, (24, 100, 848, 142))
+    recursos.texto(tela, "REDE 5 ENTRADAS / 4 OCULTOS / 2 SAIDAS - TANH E DEGRAU", 40, 110, ROSA, 1)
     for indice, linha in enumerate(linhas):
-        recursos.texto(tela, linha, 40, 130 + indice * 18, escala=1)
+        recursos.texto(tela, linha, 40, 128 + indice * 12, escala=1)
     if mostrar_sensor:
         pygame.draw.rect(tela, ROSA, ambiente.personagem, 1)
     if mostrar_sensor and ambiente.obstaculo.right >= ambiente.personagem.left:
         pygame.draw.line(tela, ROSA, ambiente.personagem.topright, ambiente.obstaculo.topleft)
-    if limiar is not None and 0 <= limiar < LARGURA - ambiente.personagem.right:
-        marca_x = round(ambiente.personagem.right + limiar)
-        for y in range(214, CHAO_Y, 12):
-            pygame.draw.rect(tela, ROSA, (marca_x, y, 2, 6))
 
 
 def desenhar_poppy(tela, recursos, ambiente, transparente=False):

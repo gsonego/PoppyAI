@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from ambiente import Ambiente
 from config import LIMITE_TENTATIVA, SEMENTE_TREINO
-from politica import decidir_salto
+from politica import aplicar_politica, DESVIOS_MUTACAO
 from treino import Treino
 
 
@@ -30,7 +30,9 @@ class TreinoGeracoes(Treino):
         self.individuos = []
         for indice, pesos in enumerate(parametros):
             cor = tuple(round(c * 255) for c in hsv_to_rgb(indice / self.tamanho, 0.85, 0.72))
-            self.individuos.append(Individuo(indice + 1, tuple(pesos), cor, Ambiente(SEMENTE_TREINO)))
+            ambiente = Ambiente(SEMENTE_TREINO, incluir_tuneis=True, incluir_passarinhos=True,
+                                incluir_pedras=True)
+            self.individuos.append(Individuo(indice + 1, tuple(pesos), cor, ambiente))
 
     @property
     def vivos(self):
@@ -58,10 +60,7 @@ class TreinoGeracoes(Treino):
         if not self.vivos:
             self.proxima_geracao()
         for poppy in self.vivos:
-            ambiente = poppy.ambiente
-            pedido = decidir_salto(ambiente.distancia, ambiente.obstaculo.height,
-                                   ambiente.obstaculo.width, ambiente.velocidade, poppy.parametros)
-            ambiente.avancar(pedido)
+            aplicar_politica(poppy.ambiente, poppy.parametros)
         self.salvar_melhor(forcar=not self.vivos)
 
     def proxima_geracao(self):
@@ -78,7 +77,7 @@ class TreinoGeracoes(Treino):
             else:
                 mae = self.sorteio.choice(pais)
                 parametros.append(tuple(peso + self.sorteio.gauss(0, desvio)
-                                        for peso, desvio in zip(mae, (0.20, 0.20, 0.20, 0.20, 0.10))))
+                                        for peso, desvio in zip(mae, DESVIOS_MUTACAO)))
         self.geracao += 1
         self._criar_individuos(parametros)
         self.salvar_contagem()

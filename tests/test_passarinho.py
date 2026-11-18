@@ -15,6 +15,14 @@ from interface import RecursosInterface, desenhar
 
 
 class TestPassarinho(unittest.TestCase):
+    def test_elevacao_distingue_caixa_tunel_e_passarinho(self):
+        ambiente = Ambiente(123, incluir_tuneis=True, incluir_passarinhos=True)
+        self.assertEqual(ambiente.elevacao_obstaculo, 0)
+        ambiente._alvo = ambiente._sortear_obstaculo(900)
+        self.assertEqual(ambiente.elevacao_obstaculo, 42)
+        ambiente._alvo = ambiente._sortear_obstaculo(900)
+        self.assertEqual(ambiente.elevacao_obstaculo, 92)
+
     @staticmethod
     def criar_perto(x=225, tempo=0):
         ambiente = Ambiente(123, incluir_passarinhos=True)
@@ -42,7 +50,7 @@ class TestPassarinho(unittest.TestCase):
             self.assertTrue(ambiente.fim_de_jogo)
 
     def test_primeiros_desafios_e_reinicio_da_mistura(self):
-        ambiente = Ambiente(123, incluir_bumerangues=True, incluir_passarinhos=True)
+        ambiente = Ambiente(123, incluir_tuneis=True, incluir_passarinhos=True)
         self.assertEqual(ambiente.tipo_obstaculo, "simples")
 
         def sequencia():
@@ -50,19 +58,19 @@ class TestPassarinho(unittest.TestCase):
                     for g in (ambiente._sortear_obstaculo(900) for _ in range(80))]
 
         primeira = sequencia()
-        self.assertEqual([tipo for tipo, _ in primeira[:2]], ["bumerangue", "passarinho"])
-        self.assertTrue({"simples", "bumerangue", "passarinho"}.issubset({t for t, _ in primeira}))
+        self.assertEqual([tipo for tipo, _ in primeira[:2]], ["tunel", "passarinho"])
+        self.assertTrue({"simples", "tunel", "passarinho"}.issubset({t for t, _ in primeira}))
         ambiente.reiniciar(123)
         self.assertEqual(sequencia(), primeira)
         treino = Ambiente(123)
-        self.assertFalse(any(treino._sortear_obstaculo(900).tipo in ("bumerangue", "passarinho")
+        self.assertFalse(any(treino._sortear_obstaculo(900).tipo in ("tunel", "passarinho")
                              for _ in range(100)))
 
     def test_interpolacao_e_separacao_das_caixas(self):
         ambiente = self.criar_perto()
         ambiente.avancar(False)
         self.assertFalse(ambiente.caixas_visiveis)
-        self.assertFalse(ambiente.bumerangues_visiveis)
+        self.assertFalse(ambiente.tuneis_visiveis)
         original = ambiente.obstaculo.copy()
         retangulo = VistaAmbiente(ambiente, 0).passarinhos_visiveis[0]
         self.assertGreater(retangulo.x, original.x)
@@ -72,12 +80,12 @@ class TestPassarinho(unittest.TestCase):
     def test_ha_percurso_viavel_na_mistura_inclusive_na_velocidade_maxima(self):
         for tempo in (0, 120):
             for semente in range(5):
-                ambiente = Ambiente(semente, incluir_bumerangues=True, incluir_passarinhos=True)
+                ambiente = Ambiente(semente, incluir_tuneis=True, incluir_passarinhos=True)
                 ambiente.tempo_vivo = tempo
                 for quadro in range(2400):
-                    ambiente.definir_abaixada(ambiente.tipo_obstaculo == "bumerangue"
+                    ambiente.definir_abaixada(ambiente.tipo_obstaculo == "tunel"
                                               and ambiente.distancia < 250)
-                    if ambiente.tipo_obstaculo not in ("bumerangue", "passarinho"):
+                    if ambiente.tipo_obstaculo not in ("tunel", "passarinho"):
                         if ambiente.distancia < ambiente.velocidade * 0.20:
                             ambiente.pular_manualmente()
                     ambiente.avancar(False)

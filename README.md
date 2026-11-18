@@ -1,8 +1,10 @@
 # PoppyAI
 
-Experimento de aprendizado com quatro nós de entrada (distância, altura, largura e velocidade do
-obstáculo), um neurônio de saída e busca evolutiva, sem bibliotecas de machine
-learning. A função de ativação é o degrau: pede salto quando `z > 0`.
+Experimento de aprendizado com cinco entradas (distância, altura, largura,
+velocidade e elevação do obstáculo), quatro neurônios intermediários e duas
+saídas (saltar e abaixar). A busca evolutiva ajusta os 34 pesos e vieses, sem
+bibliotecas de machine learning. A camada intermediária usa `tanh`; as saídas
+usam degrau (`z > 0`).
 
 No PowerShell, abra a tela inicial:
 
@@ -42,22 +44,34 @@ No humano, segurar `↓` abaixa a Poppy no chão; soltar levanta. A colisão pas
 de 48 × 56 para 48 × 32 pixels, com a mesma largura e apoio no chão. Abaixada,
 ela não salta. No ar, mantém a pose de salto; se continuar segurando ao pousar,
 ela abaixa. Perder o foco da janela libera o comando; R reinicia em pé.
-A pose abaixada também fica vermelha na colisão. Nesta etapa só o humano
-recebe esse comando; a adaptação da IA fica para depois.
+A pose abaixada também fica vermelha na colisão. A IA usa a mesma postura e
+colisão; seus comandos vêm da rede, sem intervenção manual no treino ou avaliação.
 A corrida abaixada usa quatro poses de patas, guiadas pelos mesmos 32 pixels
 percorridos por quadro da corrida em pé. Ao colidir, congela no quadro atual,
 com a cor vermelha. A animação mantém a área de colisão de 48 × 32 pixels.
 
-O humano também enfrenta bumerangues baixos de 32 × 32 pixels, com centro
-56 pixels acima do chão. Atingem a Poppy em pé, mas passam acima dela abaixada.
-O primeiro desafio é uma caixa, o segundo um bumerangue e o terceiro um passarinho.
-Depois, há uma chance de 1/4 de sortear passarinho e, nos demais sorteios,
-1/3 de escolher bumerangue, com caixas nas opções restantes. Os intervalos e
-a aceleração são os mesmos do restante da partida. Segure `↓` até ele passar.
-Eles giram e atravessam em linha reta da direita para a esquerda, sem retorno.
-R repete a mesma sequência. A arte original está em `art/bumerangue.py`, com
-a folha de poses exportada em `art/source/bumerangue.png`. O treino e a avaliação
-continuam somente com caixas; as campeãs salvas permanecem compatíveis.
+Os três modos enfrentam túneis metálicos, substituindo o bumerangue. O teto
+sólido vai de 160 até 42 pixels acima do chão: a abertura tem sempre 42 pixels.
+O túnel sorteia comprimentos de **120, 200 ou 280 pixels**. Abaixada, a Poppy
+passa; correndo em pé, saltando ou levantando dentro, colide com o teto.
+O topo é alto demais para ultrapassar com o salto atual. A base é decorativa e
+não levanta a personagem nem cria paredes nas entradas.
+
+A apresentação inicial é caixa, pedra, pássaro e túnel. Depois há chance de
+1/5 de sortear pedra antes dos demais sorteios, com um pássaro logo depois.
+Nos outros sorteios, há chance de 1/4 de passarinho e, nas opções restantes,
+1/3 de túnel, com caixas nos demais casos. A aceleração e os intervalos
+continuam iguais. A distância até o desafio seguinte é contada da saída do
+anterior, inclusive nos túneis longos. Segure `↓` até sair completamente.
+
+O túnel permanece como alvo enquanto sua saída estiver à frente da traseira da
+área de colisão da Poppy. A distância até sua entrada fica negativa durante a
+passagem; a rede continua recebendo distância, largura e elevação do mesmo
+obstáculo. Ela decide quanto tempo manter abaixada, sem temporizador ou liberação
+automática. O alvo só muda quando a personagem inteira tiver saído.
+
+R repete a mesma sequência. A arte aprovada está em `art/source/tunel.png`,
+preparada nos três comprimentos por `art/tunel.py`.
 
 O passarinho azul alto cruza para a esquerda, com quatro poses de asas. Ele
 passa acima das orelhas da Poppy correndo; um salto desnecessário pode causar
@@ -66,6 +80,26 @@ As asas são decorativas e a colisão não oscila entre poses. Correr ou abaixar
 permite passar. A arte está em `art/passarinho.py` e `art/source/passarinho.png`.
 O espaço mínimo entre desafios permanece o mesmo, sem misturar voadores e
 caixas na mesma posição.
+
+Os três modos recebem também pedras de 32 × 10 pixels. Em pé,
+a Poppy passa com a corrida normal, sem subir ou descer; abaixada, a faixa
+frontal de 12 pixels da sua colisão encontra a pedra. Saltar também permite
+passar. Depois que o focinho ultrapassa a rocha, pode abaixar novamente.
+A apresentação inicial é caixa, pedra, pássaro e túnel; depois,
+há uma chance de 1/5 de pedra antes dos demais sorteios. Cada pedra é seguida
+por um pássaro separado: sua frente vem cerca de 0,3 segundo depois da saída
+da pedra, com distância mínima de 90 pixels. O intervalo é calculado pela
+velocidade quando o pássaro é gerado. Correr em pé passa pelos dois; abaixar
+na pedra causa colisão, e saltar perto dela pode encontrar o pássaro logo depois.
+Pedra e pássaro têm posições, desenho, colisão e alvo independentes. Depois
+do pássaro, o próximo obstáculo volta a respeitar o intervalo normal completo.
+O experimento 10 leva essa mistura ao treino e à avaliação. As 50 candidatas
+enfrentam a mesma sequência e aprendem a alternar entre correr, saltar e abaixar.
+Altura e largura permitem distinguir a pedra das caixas, sem uma entrada com o
+nome do obstáculo. A rede continua 5/4/2, com 34 parâmetros. Ficar sempre abaixada
+agora falha na pedra; um salto antecipado ainda pode ser uma solução válida.
+O novo treino começa com pesos aleatórios e geração 1; o resultado do 9 é
+registrado no histórico antes do primeiro salvamento da nova campeã.
 
 No modo humano, a colisão mantém o resultado na tela; `R` repete a partida.
 A Poppy fica vermelha ao colidir no humano e na avaliação e permanece assim
@@ -76,7 +110,7 @@ ou fechar a janela. Ele é separado dos pesos e do recorde da IA.
 Para entrar diretamente, use `--modo humano`, `--modo treino` ou
 `--modo avaliacao`.
 
-Para observar a campeã salva, com os quatro pesos e o viés fixos:
+Para observar a campeã salva, com todos os pesos e vieses fixos:
 
 ```powershell
 .\.venv\Scripts\python.exe main.py --modo avaliacao
@@ -102,35 +136,41 @@ entrar, diferente da semente de treino. N também evita repetir a semente atual.
 `--semente` define a sequência inicial, inclusive 123 se desejado; depois, R e N
 funcionam da mesma forma. Os pesos permanecem fixos. O treino continua usando 123.
 
-Nos modos da IA, pressione `Tab` para mostrar os quatro pesos, o viés, a distância,
-a altura, a largura total do conjunto, a velocidade e o pedido atual da política.
-Distância e largura são divididas pela largura lógica da janela, altura pela
-altura lógica e velocidade por `VELOCIDADE_MAXIMA`:
+Nos modos da IA, `Tab` mostra as cinco medidas, as duas saídas, a ação escolhida
+e os pesos e vieses dos seis neurônios. D/A/L/V/E/B correspondem a distância,
+altura, largura, velocidade, elevação e viés. Elevação é a distância da base do
+obstáculo até o chão: 0 para caixas, 42 para túneis e 92 para passarinhos.
+Distância e largura são divididas por 900; altura e elevação por 400; velocidade
+por 650. O modelo não recebe o nome ou o tipo do obstáculo.
+
+A rede tem estrutura **5 → 4 → 2**:
 
 ```python
-z = (peso_distancia * (distancia / LARGURA)
-     + peso_altura * (altura / ALTURA)
-     + peso_largura * (largura / LARGURA)
-     + peso_velocidade * (velocidade / VELOCIDADE_MAXIMA)
-     + vies)
+oculto[j] = tanh(soma(peso[j][i] * entrada[i]) + vies[j])
+z_salto = soma(peso_salto[j] * oculto[j]) + vies_salto
+z_abaixar = soma(peso_abaixar[j] * oculto[j]) + vies_abaixar
+abaixar = z_abaixar > 0
+saltar = z_salto > 0 and not abaixar
 ```
 
-A marca rosa nos detalhes indica a distância em que a decisão muda, para a altura
-a largura e a velocidade do conjunto atual:
-`limite = -(peso_altura * (altura / ALTURA) + peso_largura * (largura / LARGURA) + peso_velocidade * (velocidade / VELOCIDADE_MAXIMA) + vies) / peso_distancia * LARGURA`.
-Com peso da distância negativo, pede salto abaixo do limite; com positivo,
-acima. No limite exato, não pede salto (`z > 0`, sujeito à precisão numérica).
-Peso da distância zero produz uma decisão que depende apenas da altura, da largura, da velocidade e do
-viés, sem marca de distância. Limites negativos ou fora da tela continuam
-descritos no texto, sem uma marca visível no chão. O pedido só vira um salto
-quando o personagem está no chão e a distância é não negativa.
+Se as duas saídas dispararem, abaixar tem prioridade. Com as duas desligadas,
+continua correndo. Abaixar só muda a postura no chão; no ar, o pedido é mantido
+para o pouso. Saltar exige estar no chão, não estar abaixada e ter distância não
+negativa até o alvo. Não há regras que forcem a ação por tipo de obstáculo.
+A marca de distância única do antigo modelo linear foi retirada: a camada
+intermediária permite decisões que não têm um único limiar de salto.
 
-O modelo da IA é a versão 7, com quatro pesos e um viés, salvo em
-`dados/campeoes/campeao.json`. Esse arquivo contém o número do experimento e a
-geração atual. O recorde pessoal fica em `recorde_humano.json`, somente com o
-tempo, e vale independentemente do experimento ou da sequência de obstáculos.
-O histórico está em [EXPERIMENTOS.md](EXPERIMENTOS.md), na ordem das mudanças.
-As forças do salto e a aceleração continuam iguais.
+O experimento atual é o **10**, com 34 parâmetros: quatro blocos de cinco pesos
+mais viés para a camada intermediária (24 valores), seguidos de dois blocos de
+quatro pesos mais viés para as saídas (10 valores), na ordem salto e abaixar.
+O arquivo único `dados/campeoes/campeao.json` guarda a arquitetura, os parâmetros,
+o experimento, o recorde e a geração atual. Ao iniciar a nova busca, pesos antigos
+não são reaproveitados. No primeiro salvamento, o resultado do experimento 9 é
+registrado no histórico local antes da substituição da campeã.
+
+O recorde pessoal continua em `recorde_humano.json`, somente com o tempo, e vale
+independentemente do experimento ou sequência. O histórico das mudanças está em
+[EXPERIMENTOS.md](EXPERIMENTOS.md). As forças do salto e a aceleração continuam iguais.
 
 A pasta `dados/campeoes/` é criada automaticamente no primeiro salvamento e é
 ignorada pelo Git. Os arquivos das campeãs que eram versionados foram retirados
@@ -269,7 +309,7 @@ do sorteio não é persistido. Arquivos antigos sem essa contagem começam em 1.
 | `main.py` | Inicializar o Pygame e coordenar menu, controles e os três modos. |
 | `config.py` | Dimensões, física, passo fixo, sementes, limite e caminho da campeã. |
 | `ambiente.py` | Estado da partida, saltos, obstáculos e colisões. |
-| `politica.py` | Converter distância, altura, largura e parâmetros em um pedido de salto. |
+| `politica.py` | Observar cinco medidas, calcular a rede 5/4/2 e aplicar salto/abaixar. |
 | `treino.py` | Pontuar partidas, preservar a melhor configuração e gerar candidatas. |
 | `geracoes.py` | Simular 50 candidatas, eliminar colisões e selecionar a próxima geração. |
 | `avaliacao.py` | Carregar a campeã e acompanhar uma partida com parâmetros fixos. |
@@ -282,7 +322,7 @@ do sorteio não é persistido. Arquivos antigos sem essa contagem começam em 1.
 | `art/cenario.py` | Desenhar a paisagem em pixel art e o chão que acompanha o deslocamento. |
 | `art/fonte_pixel.py` | Renderizar a fonte bitmap sem fontes externas. |
 
-O fluxo de cada passo é: observar distância, altura, largura e velocidade → a política pedir ou não um salto → o ambiente executar o passo → o treino verificar se a tentativa acabou → desenhar.
+O fluxo de cada passo é: observar distância, altura, largura, velocidade e elevação → a rede decidir salto e postura → o ambiente executar o passo → o treino verificar se a tentativa acabou → desenhar.
 
 O ambiente não conhece pesos nem mutações. A política não conhece a física. O treino muda os parâmetros somente entre partidas. Essa divisão permite estudar cada conceito e, depois, usar o mesmo ambiente com parâmetros fixos para avaliação.
 
@@ -299,6 +339,10 @@ O ambiente não conhece pesos nem mutações. A política não conhece a física
 A versão do experimento em `campeao.py` deve ser incrementada se mudar a física, a observação, a política ou a geração de obstáculos. O carregamento também verifica o limite e a semente. O limite atual é `null` no JSON (sem teto). Recordes de versões anteriores não são comparados com os do desafio atual.
 O treino de um novo experimento começa na geração 1 e substitui o arquivo único
 no primeiro salvamento; a avaliação exige uma campeã do experimento atual.
+Antes de substituir a campeã de outro experimento, salva seu tempo e geração
+final em `dados/campeoes/historico_experimentos.json`, fora do Git. O histórico
+guarda resumos, sem pesos antigos; `campeao.json` continua sendo o único arquivo
+de campeã. Se o histórico não puder ser salvo, a campeã anterior é preservada.
 Documente cada alteração em [EXPERIMENTOS.md](EXPERIMENTOS.md).
 
 A avaliação sorteia uma sequência por padrão; `--semente` permite escolher uma
@@ -328,6 +372,10 @@ Se o jogo fechar inesperadamente, os detalhes da execução ficam em
 `dados/logs/jogo.log`, fora do Git. O registro diferencia saídas normais,
 pedidos de fechar a janela e erros; também captura falhas nativas quando possível.
 Abra pelo comando habitual para ativar esse registro.
+
+O controle da janela mantém viva a referência usada pelo SDL nos eventos de
+mouse. Isso evita um ponteiro inválido nas consultas de VSync do Pygame 2.6.1.
+A verificação inclui eventos nativos SDL em um processo separado no Windows.
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v

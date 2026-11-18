@@ -5,9 +5,12 @@ import math
 from pathlib import Path
 from threading import Condition, Thread
 
+from historico import registrar_resultado
+from politica import MODELO, QUANTIDADE_PARAMETROS
+
 
 # Incremente se mudar a física, observação, política ou geração de obstáculos.
-VERSAO_EXPERIMENTO = 7
+VERSAO_EXPERIMENTO = 10
 
 
 class GravadorCampeao:
@@ -89,28 +92,34 @@ def carregar_campeao(caminho, limite, semente, *, incluir_geracao=False, novo_ex
     ):
         raise ValueError("A campeã salva pertence a outro experimento.")
 
-    valores = [dados.get(chave) for chave in (
-        "peso_distancia", "peso_altura", "peso_largura", "peso_velocidade", "vies", "tempo_segundos",
-    )]
+    parametros = dados.get("parametros")
+    if (dados.get("modelo") != MODELO or not isinstance(parametros, list)
+            or len(parametros) != QUANTIDADE_PARAMETROS):
+        raise ValueError("A campeã salva não contém a rede 5/4/2 completa.")
+    valores = parametros + [dados.get("tempo_segundos")]
     if any(
         type(valor) not in (int, float) or not math.isfinite(valor)
         for valor in valores
     ):
         raise ValueError("A campeã salva contém parâmetros ou tempo inválidos.")
-    peso_distancia, peso_altura, peso_largura, peso_velocidade, vies, tempo = valores
+    tempo = valores[-1]
     limite_salvo = dados["experimento"]["limite_segundos"]
     if tempo < 0 or (limite_salvo is not None and tempo > limite_salvo):
         raise ValueError("O tempo salvo está fora do limite do experimento.")
     geracao = dados.get("geracao", 1)
     if type(geracao) is not int or geracao < 1:
         raise ValueError("A geração salva deve ser um inteiro positivo.")
-    campeao = ((peso_distancia, peso_altura, peso_largura, peso_velocidade, vies), tempo)
+    campeao = (tuple(parametros), tempo)
     return (*campeao, geracao) if incluir_geracao else campeao
 
 
 def salvar_campeao(caminho, parametros, tempo, limite, semente, geracao=1):
     if type(geracao) is not int or geracao < 1:
         raise ValueError("A geração salva deve ser um inteiro positivo.")
+    if len(parametros) != QUANTIDADE_PARAMETROS or any(
+        type(valor) not in (int, float) or not math.isfinite(valor) for valor in parametros
+    ):
+        raise ValueError("A campeã exige 34 pesos e vieses finitos.")
     caminho = Path(caminho)
     caminho.parent.mkdir(parents=True, exist_ok=True)
     dados = {
@@ -119,14 +128,19 @@ def salvar_campeao(caminho, parametros, tempo, limite, semente, geracao=1):
             "limite_segundos": limite,
             "semente_treino": semente,
         },
-        "peso_distancia": parametros[0],
-        "peso_altura": parametros[1],
-        "peso_largura": parametros[2],
-        "peso_velocidade": parametros[3],
-        "vies": parametros[4],
+        "modelo": MODELO,
+        "parametros": list(parametros),
         "tempo_segundos": tempo,
         "geracao": geracao,
     }
+    # Registra o resultado anterior antes de substituir seu único arquivo de pesos.
+    # Se o histórico falhar, a campeã antiga permanece intacta para uma nova tentativa.
+    if caminho.exists():
+        anterior = json.loads(caminho.read_text(encoding="utf-8"))
+        experimento_anterior = anterior.get("experimento") if isinstance(anterior, dict) else None
+        if (isinstance(experimento_anterior, dict)
+                and experimento_anterior.get("versao") != VERSAO_EXPERIMENTO):
+            registrar_resultado(caminho, anterior)
     # Substituir somente após escrever evita truncar o recorde anterior.
     temporario = caminho.with_suffix(caminho.suffix + ".tmp")
     temporario.write_text(

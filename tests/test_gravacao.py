@@ -1,5 +1,7 @@
 """Verifica a gravação em segundo plano mesmo quando o disco demora ou falha."""
 
+from tests.apoio import rede_simples
+
 import contextlib
 import io
 import os
@@ -86,12 +88,12 @@ class TestGravacao(unittest.TestCase):
 
             with patch("campeao.salvar_campeao", side_effect=salvar_lento):
                 try:
-                    parametros = [-1.5, 0.2, 0.3, 0.0, 0.5]
+                    parametros = list(rede_simples([-1.5, 0.2, 0.3, 0.0, 0.5]))
                     gravador.agendar(caminho, parametros, 65, None, SEMENTE_TREINO)
                     self.assertTrue(iniciou.wait(2))
                     parametros[1] = 9  # Não deve modificar o pedido já entregue.
-                    gravador.agendar(caminho, (-1.4, 0.3, 0.4, 0.0, 0.6), 66, None, SEMENTE_TREINO)
-                    gravador.agendar(caminho, (-1.3, 0.4, 0.5, 0.0, 0.7), 67, None, SEMENTE_TREINO)
+                    gravador.agendar(caminho, rede_simples((-1.4, 0.3, 0.4, 0.0, 0.6)), 66, None, SEMENTE_TREINO)
+                    gravador.agendar(caminho, rede_simples((-1.3, 0.4, 0.5, 0.0, 0.7)), 67, None, SEMENTE_TREINO)
                     # Os pedidos acima retornaram com a primeira gravação ainda parada.
                     self.assertEqual(len(chamadas), 1)
                     thread = Thread(target=fechar)
@@ -106,9 +108,9 @@ class TestGravacao(unittest.TestCase):
                 self.assertTrue(encerrou.is_set())
                 self.assertEqual(erros, [])
             self.assertEqual([pedido[2] for pedido in chamadas], [65, 67])
-            self.assertEqual(chamadas[0][1], (-1.5, 0.2, 0.3, 0.0, 0.5))
+            self.assertEqual(chamadas[0][1], rede_simples((-1.5, 0.2, 0.3, 0.0, 0.5)))
             self.assertEqual(carregar_campeao(caminho, None, SEMENTE_TREINO),
-                             ((-1.3, 0.4, 0.5, 0.0, 0.7), 67))
+                             (rede_simples((-1.3, 0.4, 0.5, 0.0, 0.7)), 67))
 
     def test_falha_de_gravacao_e_informada(self):
         falhou = Event()
@@ -119,7 +121,7 @@ class TestGravacao(unittest.TestCase):
             raise PermissionError("Disco indisponível")
 
         with patch("campeao.salvar_campeao", side_effect=falhar):
-            gravador.agendar("nao-deve-ser-criado.json", (-1, 0, 0, 0, 0.5), 65, None, SEMENTE_TREINO)
+            gravador.agendar("nao-deve-ser-criado.json", rede_simples((-1, 0, 0, 0, 0.5)), 65, None, SEMENTE_TREINO)
             self.assertTrue(falhou.wait(2))
             with self.assertRaisesRegex(OSError, "Disco indisponível"):
                 gravador.fechar()
@@ -130,7 +132,7 @@ class TestGravacao(unittest.TestCase):
         gravador = GravadorCampeao()
         gravador.fechar()
         with self.assertRaises(RuntimeError):
-            gravador.agendar("nao-deve-ser-criado.json", (-1, 0, 0, 0, 0.5), 65, None, SEMENTE_TREINO)
+            gravador.agendar("nao-deve-ser-criado.json", rede_simples((-1, 0, 0, 0, 0.5)), 65, None, SEMENTE_TREINO)
 
 
 if __name__ == "__main__":

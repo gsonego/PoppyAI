@@ -30,12 +30,16 @@ class VistaAmbiente:
         return tuple(caixas)
 
     @property
-    def bumerangues_visiveis(self):
-        return self._voadores_visiveis("bumerangue")
+    def tuneis_visiveis(self):
+        return self._voadores_visiveis("tunel")
 
     @property
     def passarinhos_visiveis(self):
         return self._voadores_visiveis("passarinho")
+
+    @property
+    def pedras_visiveis(self):
+        return self._voadores_visiveis("pedra")
 
     def _voadores_visiveis(self, tipo):
         retangulos = []

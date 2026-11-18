@@ -1,6 +1,10 @@
 """Solicitação de VSync, alternativa sem renderer e coordenadas da tela lógica."""
 
 import os
+from pathlib import Path
+import subprocess
+import sys
+import textwrap
 import unittest
 from unittest.mock import patch
 
@@ -71,6 +75,62 @@ class TestVSync(unittest.TestCase):
             janela.apresentar(tela)
         escala.assert_not_called()
         self.assertEqual(pygame.display.get_surface().get_at((10, 10))[:3], (220, 113, 137))
+
+    def test_mouse_nao_consulta_superficie_no_tratamento_de_resize(self):
+        with patch("janela.pygame.display.get_surface") as superficie:
+            janela.tratar_redimensionamento(pygame.event.Event(pygame.MOUSEMOTION, pos=(10, 20)))
+            janela.tratar_redimensionamento(pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=(10, 20), button=1))
+        superficie.assert_not_called()
+
+    @unittest.skipUnless(os.name == "nt", "Verificação nativa da janela SDL no Windows")
+    def test_referencia_sdl_permanece_viva_ao_processar_mouse_nativo(self):
+        # Uma regressão pode corromper a memória do interpretador: isola a prova
+        # em subprocesso, usando a DLL real e eventos SDL com windowID válido.
+        codigo = textwrap.dedent('''
+            import ctypes
+            import gc
+            from pathlib import Path
+            import struct
+            import pygame
+            import janela
+
+            pygame.init()
+            pygame.display.set_mode((900, 400))
+            sdl = ctypes.CDLL(str(Path(pygame.__file__).parent / "SDL2.dll"))
+            sdl.SDL_GetWindowFromID.argtypes = [ctypes.c_uint32]
+            sdl.SDL_GetWindowFromID.restype = ctypes.c_void_p
+            sdl.SDL_GetWindowData.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+            sdl.SDL_GetWindowData.restype = ctypes.c_void_p
+            sdl.SDL_PushEvent.argtypes = [ctypes.c_void_p]
+            sdl.SDL_PushEvent.restype = ctypes.c_int
+            movimentos = 0
+            for indice in range(2000):
+                if indice % 250 == 0:
+                    pygame.display.set_mode((900, 400))
+                janela._consulta_renderer()
+                dono = janela._janela_sdl
+                ponteiro = sdl.SDL_GetWindowFromID(dono.id)
+                assert sdl.SDL_GetWindowData(ponteiro, b"pg_window") == id(dono)
+                if indice % 50 == 0:
+                    gc.collect()
+                evento = ctypes.create_string_buffer(56)
+                struct.pack_into("<IIIIIiiii", evento, 0, pygame.MOUSEMOTION, 0,
+                                 dono.id, 0, 0, indice % 900, 100, 1, 0)
+                assert sdl.SDL_PushEvent(evento) == 1
+                for recebido in pygame.event.get():
+                    if recebido.type == pygame.MOUSEMOTION:
+                        assert recebido.window is dono
+                        movimentos += 1
+            assert movimentos == 2000
+            pygame.quit()
+            print("2000 movimentos SDL processados com referencia valida")
+        ''')
+        resultado = subprocess.run([sys.executable, "-X", "faulthandler", "-c", codigo],
+                                   cwd=Path(__file__).resolve().parents[1],
+                                   env={**os.environ, "SDL_VIDEODRIVER": "dummy", "SDL_AUDIODRIVER": "dummy"},
+                                   capture_output=True, text=True, timeout=30)
+        self.assertEqual(resultado.returncode, 0, resultado.stdout + resultado.stderr)
+        self.assertIn("2000 movimentos SDL", resultado.stdout)
 
 
 if __name__ == "__main__":

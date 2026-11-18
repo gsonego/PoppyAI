@@ -56,7 +56,7 @@ Para observar a campeã salva, com os quatro pesos e o viés fixos:
 Sem `--modo`, o programa abre o menu.
 Na avaliação, a partida continua até a colisão, sem limite de tempo, e mantém
 o resultado na tela. R repete a mesma sequência desde o início; o salto
-manual fica desativado. Esse modo não gera mutações nem grava em `dados/campeoes/campeao_intervalos.json`.
+manual fica desativado. Esse modo não gera mutações nem grava em `dados/campeoes/campeao.json`.
 Se não houver campeã salva, o programa informa que é preciso treinar primeiro.
 
 Para avaliar em outra sequência de obstáculos:
@@ -94,12 +94,11 @@ descritos no texto, sem uma marca visível no chão. O pedido só vira um salto
 quando o personagem está no chão e a distância é não negativa.
 
 O modelo da IA é a versão 7, com quatro pesos e um viés, salvo em
-`dados/campeoes/campeao_intervalos.json`. As regras da partida são a versão 6,
+`dados/campeoes/campeao.json`. As regras da partida são a versão 6,
 com o recorde pessoal em `recorde_humano_intervalos.json`. Os intervalos menores mudam o
-desafio: é necessário novo treino e novos recordes. As campeãs anteriores foram
-preservadas em `dados/campeoes/`, sem reaproveitar suas pontuações no novo modelo.
-As forças do salto e a aceleração continuam iguais. Os pesos anteriores permanecem
-em seus arquivos, incluindo `dados/campeoes/campeao_velocidade.json`.
+desafio. O arquivo único contém o número do experimento e a geração atual.
+O histórico está em [EXPERIMENTOS.md](EXPERIMENTOS.md), na ordem das mudanças.
+As forças do salto e a aceleração continuam iguais.
 
 A pasta `dados/campeoes/` é criada automaticamente no primeiro salvamento e é
 ignorada pelo Git. Os arquivos das campeãs que eram versionados foram retirados
@@ -226,8 +225,10 @@ Não há limite de duração; use essa tecla se alguma continuar sobrevivendo.
 `Tab` abre os pesos e a marca de salto da representante; `Esc` volta ao menu
 salvando o melhor progresso. `Espaço` e `R` ficam desativados no treino coletivo.
 Poppys que fazem os mesmos movimentos podem se sobrepor, embora sejam simuladas
-e pontuadas separadamente. O estado completo da população e o número da geração
-não são persistidos: ao reabrir, começa uma geração nova com a campeã salva.
+e pontuadas separadamente. O número da geração é salvo junto da campeã, inclusive
+quando não há novo recorde. Ao reabrir, a contagem é retomada; a corrida recomeça
+com uma população criada a partir da campeã. O estado completo da população e
+do sorteio não é persistido. Arquivos antigos sem essa contagem começam em 1.
 
 ## Organização
 
@@ -258,12 +259,15 @@ O ambiente não conhece pesos nem mutações. A política não conhece a física
 - Passo fixo de 1/60 s e tentativas sem limite de tempo: terminam na colisão.
 - No treino coletivo, os parâmetros mudam entre gerações. Novos recordes são salvos durante a partida, a cada avanço de aproximadamente um segundo sobre o recorde salvo, e também ao encerrar uma geração, voltar ao menu ou fechar a janela.
 - Treino sempre na sequência de obstáculos da semente 123.
-- Campeã salva em `dados/campeoes/campeao_intervalos.json`, fora do versionamento; empates preservam a anterior.
+- Campeã salva em `dados/campeoes/campeao.json`, fora do versionamento; empates preservam a anterior.
 - Durante o jogo, as gravações ocorrem em uma thread separada para não bloquear os quadros. Se o disco estiver ocupado, a fila mantém apenas o pedido mais recente. Ao fechar a janela, o programa espera a última gravação terminar. Erros de gravação são informados.
 - Ao reabrir, a primeira candidata usa os parâmetros salvos. O estado do gerador de mutações não é salvo, portanto a busca não continua exatamente de onde parou.
 - No treino, N avança para a próxima geração; não há intervenção manual nos saltos.
 
 A versão do experimento em `campeao.py` deve ser incrementada se mudar a física, a observação, a política ou a geração de obstáculos. O carregamento também verifica o limite e a semente. O limite atual é `null` no JSON (sem teto). Recordes de versões anteriores não são comparados com os do desafio atual.
+O treino de um novo experimento começa na geração 1 e substitui o arquivo único
+no primeiro salvamento; a avaliação exige uma campeã do experimento atual.
+Documente cada alteração em [EXPERIMENTOS.md](EXPERIMENTOS.md).
 
 A avaliação usa a semente 123 por padrão para reproduzir o desempenho da campeã; `--semente` permite observar o desempenho em outras sequências. Se resultados dessas sequências orientarem ajustes, elas passam a servir como validação; a avaliação final precisa de outras sequências reservadas.
 

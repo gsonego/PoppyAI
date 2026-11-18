@@ -17,12 +17,14 @@ class Treino:
         self.melhores_parametros = None
         self.melhor_tempo = -1.0
         self.tentativa = 1
+        self.geracao = 1
         try:
-            campeao = carregar_campeao(caminho, LIMITE_TENTATIVA, SEMENTE_TREINO)
+            campeao = carregar_campeao(caminho, LIMITE_TENTATIVA, SEMENTE_TREINO,
+                                       incluir_geracao=True, novo_experimento=True)
         except (OSError, ValueError) as erro:
             raise SystemExit(f"Não foi possível carregar {caminho}: {erro}")
         if campeao is not None:
-            self.melhores_parametros, self.melhor_tempo = campeao
+            self.melhores_parametros, self.melhor_tempo, self.geracao = campeao
             self.parametros = self.melhores_parametros
             print(f"Campeã carregada: recorde de treino={self.melhor_tempo:.2f}s")
         else:
@@ -72,7 +74,7 @@ class Treino:
         try:
             self._salvar(
                 self.caminho, self.parametros, pontuacao,
-                LIMITE_TENTATIVA, SEMENTE_TREINO,
+                LIMITE_TENTATIVA, SEMENTE_TREINO, self.geracao,
             )
         except (OSError, ValueError) as erro:
             raise SystemExit(f"Não foi possível salvar a campeã: {erro}")

@@ -2,6 +2,7 @@
 
 import contextlib
 import io
+import json
 import os
 from pathlib import Path
 import tempfile
@@ -31,6 +32,63 @@ class TestGeracoes(unittest.TestCase):
         self.assertEqual(len({p.cor for p in self.treino.individuos}), 50)
         self.assertEqual(len({id(p.ambiente) for p in self.treino.individuos}), 50)
         self.assertEqual(len({p.parametros for p in self.treino.individuos}), 50)
+
+    def test_reabre_na_geracao_salva_sem_precisar_bater_recorde(self):
+        parametros = (-1.5, 0.7, -0.4, 0.0, 0.45)
+        salvar_campeao(self.caminho, parametros, 120, None, SEMENTE_TREINO, 42)
+        with contextlib.redirect_stdout(io.StringIO()):
+            treino = TreinoGeracoes(self.caminho)
+            self.assertEqual(treino.geracao, 42)
+            treino.proxima_geracao()
+            reaberto = TreinoGeracoes(self.caminho)
+        self.assertEqual(reaberto.geracao, 43)
+        self.assertEqual(reaberto.melhores_parametros, parametros)
+        self.assertEqual(reaberto.melhor_tempo, 120)
+        self.assertEqual(json.loads(self.caminho.read_text())["geracao"], 43)
+
+    def test_saida_preserva_geracao_e_campea_sem_melhora(self):
+        parametros = (-1.5, 0.7, -0.4, 0.0, 0.45)
+        salvar_campeao(self.caminho, parametros, 120, None, SEMENTE_TREINO, 42)
+        with contextlib.redirect_stdout(io.StringIO()):
+            treino = TreinoGeracoes(self.caminho)
+            treino.geracao = 44
+            treino.salvar_melhor(forcar=True)
+            reaberto = TreinoGeracoes(self.caminho)
+        self.assertEqual(reaberto.geracao, 44)
+        self.assertEqual(reaberto.melhor_tempo, 120)
+        self.assertEqual(reaberto.melhores_parametros, parametros)
+
+    def test_arquivo_antigo_sem_geracao_comeca_em_um(self):
+        salvar_campeao(self.caminho, (-1, 0, 0, 0, 0), 10, None, SEMENTE_TREINO)
+        dados = json.loads(self.caminho.read_text())
+        del dados["geracao"]
+        self.caminho.write_text(json.dumps(dados))
+        with contextlib.redirect_stdout(io.StringIO()):
+            treino = TreinoGeracoes(self.caminho)
+        self.assertEqual(treino.geracao, 1)
+
+    def test_outro_experimento_inicia_busca_sem_comparar_recordes(self):
+        salvar_campeao(self.caminho, (-1, 0, 0, 0, 0), 1000, None, SEMENTE_TREINO, 42)
+        dados = json.loads(self.caminho.read_text())
+        dados["experimento"]["versao"] -= 1
+        self.caminho.write_text(json.dumps(dados))
+        with self.assertRaisesRegex(ValueError, "outro experimento"):
+            carregar_campeao(self.caminho, None, SEMENTE_TREINO)
+        with contextlib.redirect_stdout(io.StringIO()):
+            treino = TreinoGeracoes(self.caminho)
+            self.assertEqual(treino.geracao, 1)
+            self.assertIsNone(treino.melhores_parametros)
+            treino.salvar_melhor(forcar=True)
+        self.assertEqual(carregar_campeao(self.caminho, None, SEMENTE_TREINO)[1], 0)
+
+    def test_rejeita_geracao_invalida(self):
+        salvar_campeao(self.caminho, (-1, 0, 0, 0, 0), 10, None, SEMENTE_TREINO)
+        dados = json.loads(self.caminho.read_text())
+        for valor in (0, -1, 1.5, True, "42"):
+            dados["geracao"] = valor
+            self.caminho.write_text(json.dumps(dados))
+            with self.assertRaisesRegex(ValueError, "geração"):
+                carregar_campeao(self.caminho, None, SEMENTE_TREINO)
 
     def test_campea_existente_entra_na_populacao_sem_alterar_arquivo(self):
         parametros = (-1.5, 0.7, -0.4, 0.0, 0.45)

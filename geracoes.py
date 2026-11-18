@@ -4,7 +4,7 @@ from colorsys import hsv_to_rgb
 from dataclasses import dataclass
 
 from ambiente import Ambiente
-from config import SEMENTE_TREINO
+from config import LIMITE_TENTATIVA, SEMENTE_TREINO
 from politica import decidir_salto
 from treino import Treino
 
@@ -23,7 +23,6 @@ class TreinoGeracoes(Treino):
             raise ValueError("A população precisa de pelo menos duas Poppys.")
         super().__init__(*args, **kwargs)
         self.tamanho = tamanho
-        self.geracao = 1
         parametros = [self.parametros] + [self._proxima_candidata() for _ in range(tamanho - 1)]
         self._criar_individuos(parametros)
 
@@ -44,7 +43,16 @@ class TreinoGeracoes(Treino):
     def salvar_melhor(self, forcar=False):
         lider = self.lider
         self.parametros = lider.parametros
-        return self.registrar_progresso(lider.ambiente, forcar=forcar)
+        melhorou = self.registrar_progresso(lider.ambiente, forcar=forcar)
+        if forcar and not melhorou:
+            self.salvar_contagem()
+        return melhorou
+
+    def salvar_contagem(self):
+        """Atualiza a geração mesmo se nenhuma candidata superar a campeã."""
+        if self.melhores_parametros is not None:
+            self._salvar(self.caminho, self.melhores_parametros, self.melhor_tempo,
+                         LIMITE_TENTATIVA, SEMENTE_TREINO, self.geracao)
 
     def avancar(self):
         if not self.vivos:
@@ -73,4 +81,5 @@ class TreinoGeracoes(Treino):
                                         for peso, desvio in zip(mae, (0.20, 0.20, 0.20, 0.20, 0.10))))
         self.geracao += 1
         self._criar_individuos(parametros)
+        self.salvar_contagem()
         print(f"Geração {self.geracao}: {self.tamanho} Poppys | recorde={self.melhor_tempo:.2f}s")

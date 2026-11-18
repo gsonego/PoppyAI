@@ -1,4 +1,4 @@
-"""Persistência da melhor política, sem salvar o estado da busca aleatória."""
+"""Persistência da campeã e da contagem de gerações do experimento."""
 
 import json
 import math
@@ -26,13 +26,13 @@ class GravadorCampeao:
         if erro is not None:
             raise OSError(f"Não foi possível salvar a campeã: {erro}") from erro
 
-    def agendar(self, caminho, parametros, tempo, limite, semente):
+    def agendar(self, caminho, parametros, tempo, limite, semente, geracao=1):
         with self._condicao:
             self.verificar_erro()
             if self._fechado:
                 raise RuntimeError("O gravador já foi fechado.")
             # Copia os parâmetros: o treino pode trocar de candidata antes da gravação.
-            self._pendente = (Path(caminho), tuple(parametros), tempo, limite, semente)
+            self._pendente = (Path(caminho), tuple(parametros), tempo, limite, semente, geracao)
             if self._thread is None:
                 self._thread = Thread(target=self._gravar, name="salvar-campeao", daemon=True)
                 self._thread.start()
@@ -64,12 +64,17 @@ class GravadorCampeao:
         self.verificar_erro()
 
 
-def carregar_campeao(caminho, limite, semente):
+def carregar_campeao(caminho, limite, semente, *, incluir_geracao=False, novo_experimento=False):
     caminho = Path(caminho)
     if not caminho.exists():
         return None
 
     dados = json.loads(caminho.read_text(encoding="utf-8"))
+    if (novo_experimento and isinstance(dados, dict)
+            and isinstance(dados.get("experimento"), dict)
+            and type(dados["experimento"].get("versao")) is int
+            and dados["experimento"]["versao"] != VERSAO_EXPERIMENTO):
+        return None
     experimento_atual = {
         "versao": VERSAO_EXPERIMENTO,
         "limite_segundos": limite,
@@ -96,10 +101,16 @@ def carregar_campeao(caminho, limite, semente):
     limite_salvo = dados["experimento"]["limite_segundos"]
     if tempo < 0 or (limite_salvo is not None and tempo > limite_salvo):
         raise ValueError("O tempo salvo está fora do limite do experimento.")
-    return (peso_distancia, peso_altura, peso_largura, peso_velocidade, vies), tempo
+    geracao = dados.get("geracao", 1)
+    if type(geracao) is not int or geracao < 1:
+        raise ValueError("A geração salva deve ser um inteiro positivo.")
+    campeao = ((peso_distancia, peso_altura, peso_largura, peso_velocidade, vies), tempo)
+    return (*campeao, geracao) if incluir_geracao else campeao
 
 
-def salvar_campeao(caminho, parametros, tempo, limite, semente):
+def salvar_campeao(caminho, parametros, tempo, limite, semente, geracao=1):
+    if type(geracao) is not int or geracao < 1:
+        raise ValueError("A geração salva deve ser um inteiro positivo.")
     caminho = Path(caminho)
     caminho.parent.mkdir(parents=True, exist_ok=True)
     dados = {
@@ -114,6 +125,7 @@ def salvar_campeao(caminho, parametros, tempo, limite, semente):
         "peso_velocidade": parametros[3],
         "vies": parametros[4],
         "tempo_segundos": tempo,
+        "geracao": geracao,
     }
     # Substituir somente após escrever evita truncar o recorde anterior.
     temporario = caminho.with_suffix(caminho.suffix + ".tmp")

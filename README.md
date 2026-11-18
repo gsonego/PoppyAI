@@ -153,7 +153,15 @@ A grama, a terra e as flores deslizam para a esquerda na mesma velocidade dos
 obstáculos, guiadas pela distância já percorrida. O padrão de chão é carregado
 uma vez e repetido sem emendas. No menu ele fica parado; na colisão ele para;
 reiniciar a partida ou a geração restaura sua posição. Essa mudança é visual
-e não invalida pesos ou recordes. Paisagem e nuvens ainda permanecem estáticas.
+e não invalida pesos ou recordes.
+
+## Paisagem em paralaxe
+
+As nuvens se movem a 8% da velocidade do chão, as colinas distantes a 18%
+e as próximas a 38%. As camadas são criadas uma vez e repetidas continuamente,
+acompanhando a distância interpolada da partida. No menu ficam paradas;
+na colisão param e, ao reiniciar, voltam à posição inicial. A mudança é apenas
+visual: os campeões salvos continuam válidos.
 
 ## Fluidez e diagnóstico
 

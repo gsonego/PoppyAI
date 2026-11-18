@@ -1,4 +1,4 @@
-"""Paisagem em pixel art e chão repetível, sem dependência da simulação."""
+"""Paisagem em camadas e chão repetível, guiados apenas pelo deslocamento visual."""
 
 import pygame
 
@@ -16,24 +16,56 @@ VERDE = "#64A54C"
 
 TERRA = "#C38B59"
 
+PERFIL_DISTANTE = (
+    (0, 263), (56, 263), (56, 245), (114, 245), (114, 228), (188, 228),
+    (188, 245), (248, 245), (248, 266), (310, 266), (310, 285), (394, 285),
+    (394, 267), (450, 267), (450, 244), (510, 244), (510, 226), (580, 226),
+    (580, 244), (644, 244), (644, 266), (706, 266), (706, 282), (900, 282),
+)
+PERFIL_PROXIMO = (
+    (0, 309), (60, 309), (60, 295), (136, 295), (136, 281), (208, 281),
+    (208, 295), (296, 295), (296, 309), (390, 309), (390, 299), (482, 299),
+    (482, 309), (650, 309), (650, 289), (730, 289), (730, 272), (810, 272),
+    (810, 289), (900, 289),
+)
+
+
+def _criar_colinas(cor, perfil):
+    largura = 2 * LARGURA
+    camada = pygame.Surface((largura, CHAO_Y), pygame.SRCALPHA)
+    # O segundo trecho volta ao perfil inicial, unindo as bordas sem degrau novo.
+    vertices = list(perfil) + [(largura - x, y) for x, y in reversed(perfil[:-1])]
+    pygame.draw.polygon(camada, cor, vertices + [(largura, CHAO_Y), (0, CHAO_Y)])
+    return camada
+
+
+class PaisagemParalaxe:
+    def __init__(self):
+        nuvens = pygame.Surface((2 * LARGURA, CHAO_Y), pygame.SRCALPHA)
+        for x, y, tamanho in ((250, 106, 2), (630, 150, 1), (810, 100, 2),
+                               (1100, 128, 2), (1500, 94, 1), (1680, 164, 1)):
+            nuvem(nuvens, x, y, tamanho)
+        self.camadas = (
+            (nuvens, 0.08),
+            (_criar_colinas("#92C8A0", PERFIL_DISTANTE), 0.18),
+            (_criar_colinas("#7CB66E", PERFIL_PROXIMO), 0.38),
+        )
+
+    def desenhar(self, tela, distancia):
+        tela.fill(CEU)
+        for camada, proporcao in self.camadas:
+            largura = camada.get_width()
+            deslocamento = round(distancia * proporcao) % largura
+            for x in range(-deslocamento, LARGURA, largura):
+                tela.blit(camada, (x, 0))
+
 def nuvem(tela, x, y, tamanho=1):
     for dx, dy, largura, altura in ((8, 0, 22, 8), (0, 8, 46, 12), (6, 20, 34, 4)):
         pygame.draw.rect(tela, CREME, (x + dx * tamanho, y + dy * tamanho, largura * tamanho, altura * tamanho))
 
 def terreno(tela, incluir_chao=True):
-    tela.fill(CEU)
-    nuvem(tela, 250, 106, 2)
-    nuvem(tela, 630, 150, 1)
-    nuvem(tela, 810, 100, 2)
-    # Colinas em degraus, com poucos tons: o cenário deixa a Poppy em destaque.
-    pygame.draw.polygon(tela, "#92C8A0", [(0, 285), (0, 263), (56, 263), (56, 245), (114, 245),
-        (114, 228), (188, 228), (188, 245), (248, 245), (248, 266), (310, 266), (310, 285),
-        (394, 285), (394, 267), (450, 267), (450, 244), (510, 244), (510, 226), (580, 226),
-        (580, 244), (644, 244), (644, 266), (706, 266), (706, 282), (900, 282), (900, 330), (0, 330)])
-    pygame.draw.polygon(tela, "#7CB66E", [(0, 309), (60, 309), (60, 295), (136, 295),
-        (136, 281), (208, 281), (208, 295), (296, 295), (296, 309), (390, 309),
-        (390, 299), (482, 299), (482, 309), (650, 309), (650, 289), (730, 289),
-        (730, 272), (810, 272), (810, 289), (900, 289), (900, 330), (0, 330)])
+    # Atalho para prévias estáticas. Durante o jogo, as camadas ficam em cache.
+    PaisagemParalaxe().desenhar(tela, 0)
     if incluir_chao:
         desenhar_chao(tela, criar_faixa_chao(), 0)
 

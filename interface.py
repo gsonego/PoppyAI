@@ -6,7 +6,7 @@ import pygame
 
 from apresentacao import VistaAmbiente
 
-from art.cenario import CREME, ROSA, TINTA, criar_faixa_chao, desenhar_chao, terreno
+from art.cenario import CREME, ROSA, TINTA, PaisagemParalaxe, criar_faixa_chao, desenhar_chao
 from art.animacao_poppy import carregar_corrida, quadro_corrida
 from art.fonte_pixel import FontePixel
 from config import ALTURA, CHAO_Y, LARGURA, POPPY_DESLOCAMENTO_VISUAL_X
@@ -23,8 +23,7 @@ def botoes_menu():
 class RecursosInterface:
     def __init__(self):
         self.fonte = FontePixel()
-        self.fundo = pygame.Surface((LARGURA, ALTURA))
-        terreno(self.fundo, incluir_chao=False)
+        self.paisagem = PaisagemParalaxe()
         self.faixa_chao = criar_faixa_chao()
         caminho = Path(__file__).resolve().parent / "art" / "source" / "poppy-aprovada.png"
         imagem = pygame.image.load(caminho).convert_alpha()
@@ -50,7 +49,7 @@ class RecursosInterface:
                        240, 80, escala=1)
 
     def desenhar_fundo(self, tela, distancia=0):
-        tela.blit(self.fundo, (0, 0))
+        self.paisagem.desenhar(tela, distancia)
         desenhar_chao(tela, self.faixa_chao, distancia)
 
     def sprite_corrida(self, altura, indice):

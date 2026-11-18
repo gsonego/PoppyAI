@@ -36,17 +36,35 @@ class TestAnimacao(unittest.TestCase):
         for distancia in (10.5, 40.5, 200):
             self.assertEqual(quadro_corrida(distancia), quadro_corrida(distancia + 128))
 
-    def test_chao_desliza_para_esquerda_sem_mover_paisagem_e_repete_sem_emenda(self):
+    def test_chao_desliza_para_esquerda_e_repete_sem_emenda(self):
         self.recursos.desenhar_fundo(self.tela, 0)
         inicial = self.tela.copy()
         self.recursos.desenhar_fundo(self.tela, 12)
         self.assertEqual(inicial.get_at((26, 345)), self.tela.get_at((14, 345)))
         self.assertNotEqual(inicial.get_at((26, 345)), self.tela.get_at((26, 345)))
-        self.assertEqual(pygame.image.tostring(inicial.subsurface((0, 0, 900, 300)), "RGB"),
-                         pygame.image.tostring(self.tela.subsurface((0, 0, 900, 300)), "RGB"))
         solo = pygame.image.tostring(self.tela.subsurface((0, 330, 900, 38)), "RGB")
         self.recursos.desenhar_fundo(self.tela, 12 + 144)
         self.assertEqual(solo, pygame.image.tostring(self.tela.subsurface((0, 330, 900, 38)), "RGB"))
+
+    def test_nuvens_e_colinas_movem_em_velocidades_diferentes(self):
+        self.recursos.desenhar_fundo(self.tela, 0)
+        inicial = self.tela.copy()
+        self.recursos.desenhar_fundo(self.tela, 100)
+        for y, cor, deslocamento in ((106, "#FFF3D9", 8), (245, "#92C8A0", 18), (295, "#7CB66E", 38)):
+            with self.subTest(camada=cor):
+                cor = pygame.Color(cor)
+                for x in range(800):
+                    self.assertEqual(inicial.get_at((x + deslocamento, y)) == cor,
+                                     self.tela.get_at((x, y)) == cor)
+
+    def test_paisagem_repete_sem_vazios_e_reinicio_recupera_cena_inicial(self):
+        self.recursos.desenhar_fundo(self.tela, 0)
+        inicial = pygame.image.tostring(self.tela, "RGB")
+        self.recursos.desenhar_fundo(self.tela, 90000)
+        self.assertEqual(inicial, pygame.image.tostring(self.tela, "RGB"))
+        self.recursos.desenhar_fundo(self.tela, 1800 / 0.38)
+        self.recursos.desenhar_fundo(self.tela, 0)
+        self.assertEqual(inicial, pygame.image.tostring(self.tela, "RGB"))
 
     def test_distancia_acompanha_mundo_para_na_morte_e_zera_ao_reiniciar(self):
         ambiente = Ambiente(123)

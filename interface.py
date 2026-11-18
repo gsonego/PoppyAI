@@ -12,6 +12,7 @@ from art.fonte_pixel import FontePixel
 from config import ALTURA, CHAO_Y, LARGURA, POPPY_DESLOCAMENTO_VISUAL_X
 from janela import apresentar, estado_apresentacao
 from politica import decidir_salto, limiar_salto
+from sons import Sons
 
 OPCOES_MENU = (("humano", "JOGAR"), ("treino", "TREINAR IA"), ("avaliacao", "VER A IA JOGAR"))
 
@@ -23,6 +24,7 @@ def botoes_menu():
 class RecursosInterface:
     def __init__(self):
         self.fonte = FontePixel()
+        self.sons = Sons()
         self.paisagem = PaisagemParalaxe()
         self.faixa_chao = criar_faixa_chao()
         caminho = Path(__file__).resolve().parent / "art" / "source" / "poppy-aprovada.png"
@@ -87,6 +89,10 @@ class RecursosInterface:
     def texto(self, tela, conteudo, x, y, cor=TINTA, escala=2):
         tela.blit(self.fonte.render(conteudo, tuple(pygame.Color(cor)), escala), (x, y))
 
+    def desenhar_som(self, tela, x=640):
+        estado = "OFF" if self.sons.silenciado else "ON"
+        self.texto(tela, f"M SOM {estado}" if self.sons.disponivel else "SEM AUDIO", x, 380, escala=1)
+
     def transparente(self, sprite):
         chave = ("transparente", id(sprite))
         if chave not in self._sprites:
@@ -120,6 +126,7 @@ def desenhar_menu(tela, recursos, selecionado=0, aviso=""):
     recursos.texto(tela, "ESC SAIR", 780, 380, escala=1)
     recursos.texto(tela, "F11 TELA", 650, 380, escala=1)
     recursos.texto(tela, "F3 FPS", 548, 380, escala=1)
+    recursos.desenhar_som(tela, 430)
     recursos.desenhar_diagnostico(tela)
     apresentar(tela)
 
@@ -230,6 +237,7 @@ def desenhar_populacao(tela, recursos, treino, detalhes=False):
     recursos.texto(tela, "F11 TELA", 500, 380, escala=1)
     recursos.texto(tela, "F3 FPS", 580, 380, escala=1)
     recursos.texto(tela, "TAB FECHAR IA" if detalhes else "TAB DETALHES IA", 710, 380, escala=1)
+    recursos.desenhar_som(tela)
     recursos.desenhar_diagnostico(tela)
     apresentar(tela)
 
@@ -273,6 +281,7 @@ def desenhar(tela, recursos, ambiente, sessao, modo="treino", detalhes=False):
     recursos.texto(tela, "F3 FPS", 580, 380, escala=1)
     if modo != "humano":
         recursos.texto(tela, "TAB FECHAR IA" if detalhes else "TAB DETALHES IA", 710, 380, escala=1)
+    recursos.desenhar_som(tela)
     if detalhes and modo != "humano":
         desenhar_decisao(tela, recursos, ambiente, sessao, modo)
     if ambiente.fim_de_jogo and modo != "treino":

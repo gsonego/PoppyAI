@@ -21,6 +21,8 @@ def tratar_evento_visual(evento, recursos):
     tratar_redimensionamento(evento)
     if evento.type == pygame.KEYDOWN and evento.key == pygame.K_F3:
         recursos.mostrar_diagnostico = not recursos.mostrar_diagnostico
+    if evento.type == pygame.KEYDOWN and evento.key == pygame.K_m:
+        recursos.sons.alternar()
 
 
 def escolher_modo(tela, recursos, relogio, aviso=""):
@@ -39,7 +41,9 @@ def escolher_modo(tela, recursos, relogio, aviso=""):
                     return None
                 if evento.key in (pygame.K_DOWN, pygame.K_UP):
                     selecionado = (selecionado + (1 if evento.key == pygame.K_DOWN else -1)) % len(OPCOES_MENU)
+                    recursos.sons.tocar("menu_mover")
                 if evento.key in (pygame.K_RETURN, pygame.K_SPACE):
+                    recursos.sons.tocar("menu_confirmar")
                     return OPCOES_MENU[selecionado][0]
             if evento.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
                 posicao = posicao_logica(evento.pos)
@@ -47,8 +51,11 @@ def escolher_modo(tela, recursos, relogio, aviso=""):
                     continue
                 for indice, retangulo in enumerate(botoes_menu()):
                     if retangulo.collidepoint(posicao):
+                        if selecionado != indice:
+                            recursos.sons.tocar("menu_mover")
                         selecionado = indice
                         if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
+                            recursos.sons.tocar("menu_confirmar")
                             return OPCOES_MENU[indice][0]
         desenhar_menu(tela, recursos, selecionado, aviso)
 
@@ -132,7 +139,10 @@ def jogar(tela, recursos, relogio, modo, semente):
                         semente = sessao.sortear_semente()
                         ambiente.reiniciar(semente)
                     if evento.key == pygame.K_UP and modo == "humano":
+                        estava_no_chao = ambiente.no_chao
                         ambiente.pular_manualmente()
+                        if estava_no_chao and not ambiente.no_chao:
+                            recursos.sons.tocar("salto")
             for _ in range(avanco.acumular(segundos)):
                 if sessao.concluida:
                     break
@@ -142,9 +152,14 @@ def jogar(tela, recursos, relogio, modo, semente):
                         ambiente.distancia, ambiente.obstaculo.height,
                         ambiente.obstaculo.width, ambiente.velocidade, sessao.parametros,
                     )
+                estava_no_chao = ambiente.no_chao
                 ambiente.avancar(pedir_salto)
+                if modo == "avaliacao" and estava_no_chao and not ambiente.no_chao:
+                    recursos.sons.tocar("salto")
                 if sessao.terminou(ambiente):
+                    novo_recorde = modo == "humano" and ambiente.tempo_vivo > sessao.melhor_tempo
                     sessao.concluir_tentativa(ambiente)
+                    recursos.sons.fim_partida(novo_recorde=novo_recorde)
             recursos.interpolacao = avanco.fracao
             desenhar(tela, recursos, ambiente, sessao, modo, detalhes)
     finally:
@@ -158,6 +173,7 @@ def main(modo=None, semente=None):
     if semente is not None and modo != "avaliacao":
         raise ValueError("--semente só pode ser usada no modo avaliacao.")
     semente_partida = semente if modo == "avaliacao" else SEMENTE_TREINO
+    pygame.mixer.pre_init(44100, -16, 2, 512)
     pygame.init()
     try:
         tela = criar_janela()

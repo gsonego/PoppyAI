@@ -286,6 +286,22 @@ sequência reproduzível. R repete e N sorteia outra, mantendo os pesos da campe
 Se resultados dessas sequências orientarem ajustes, elas passam a servir como
 validação; a avaliação final precisa de outras sequências reservadas.
 
+## Som
+
+Efeitos curtos em estilo 8-bit acompanham o salto e a colisão no humano e na
+avaliação, a navegação e confirmação no menu e o novo recorde pessoal. A pequena
+comemoração toca depois da colisão, quando o tempo supera o recorde salvo.
+O treino coletivo mantém os saltos e colisões silenciosos.
+
+`M` liga/desliga os efeitos em qualquer tela e interrompe sons em andamento.
+A escolha vale durante a sessão, incluindo ao voltar ao menu. O rodapé mostra
+o estado. Sem dispositivo de áudio ou se os efeitos não carregarem, o jogo
+continua silencioso e registra o problema no log.
+
+Os WAVs originais ficam em `audio/`, junto do gerador reproduzível
+`audio/gerar_efeitos.py`, e entram no Git. São carregados uma única vez; a
+reprodução não pausa a simulação. Esta mudança não altera o experimento da IA.
+
 ## Verificação
 
 Se o jogo fechar inesperadamente, os detalhes da execução ficam em

@@ -5,3 +5,4 @@ __pycache__/
 
 # Pesos e recordes das campeãs são dados locais do treino.
 /dados/campeoes/
+/dados/logs/

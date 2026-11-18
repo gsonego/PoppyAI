@@ -67,8 +67,11 @@ Para avaliar em outra sequência de obstáculos:
 
 A mesma semente repete a mesma sequência; sementes diferentes geram outras
 sequências. O primeiro obstáculo continua igual. A semente aparece nos detalhes da IA e
-no terminal, e R reinicia com a semente escolhida. Sem `--semente`, a avaliação
-usa 123. Essa opção é exclusiva da avaliação; o treino continua usando 123.
+no terminal. R repete a sequência atual; N sorteia outra e reinicia a partida,
+inclusive após uma colisão. Sem `--semente`, a avaliação sorteia uma semente ao
+entrar, diferente da semente de treino. N também evita repetir a semente atual.
+`--semente` define a sequência inicial, inclusive 123 se desejado; depois, R e N
+funcionam da mesma forma. Os pesos permanecem fixos. O treino continua usando 123.
 
 Nos modos da IA, pressione `Tab` para mostrar os quatro pesos, o viés, a distância,
 a altura, a largura total do conjunto, a velocidade e o pedido atual da política.
@@ -269,9 +272,17 @@ O treino de um novo experimento começa na geração 1 e substitui o arquivo ún
 no primeiro salvamento; a avaliação exige uma campeã do experimento atual.
 Documente cada alteração em [EXPERIMENTOS.md](EXPERIMENTOS.md).
 
-A avaliação usa a semente 123 por padrão para reproduzir o desempenho da campeã; `--semente` permite observar o desempenho em outras sequências. Se resultados dessas sequências orientarem ajustes, elas passam a servir como validação; a avaliação final precisa de outras sequências reservadas.
+A avaliação sorteia uma sequência por padrão; `--semente` permite escolher uma
+sequência reproduzível. R repete e N sorteia outra, mantendo os pesos da campeã.
+Se resultados dessas sequências orientarem ajustes, elas passam a servir como
+validação; a avaliação final precisa de outras sequências reservadas.
 
 ## Verificação
+
+Se o jogo fechar inesperadamente, os detalhes da execução ficam em
+`dados/logs/jogo.log`, fora do Git. O registro diferencia saídas normais,
+pedidos de fechar a janela e erros; também captura falhas nativas quando possível.
+Abra pelo comando habitual para ativar esse registro.
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v

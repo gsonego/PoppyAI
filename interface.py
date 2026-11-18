@@ -245,6 +245,8 @@ def desenhar(tela, recursos, ambiente, sessao, modo="treino", detalhes=False):
     recursos.texto(tela, "R REINICIAR", 24, 380, escala=1)
     if modo in ("humano", "treino"):
         recursos.texto(tela, "ESPACO SALTAR", 174, 380, escala=1)
+    elif modo == "avaliacao":
+        recursos.texto(tela, "N NOVA SEQUENCIA", 174, 380, escala=1)
     recursos.texto(tela, "ESC MENU", 380, 380, escala=1)
     recursos.texto(tela, "F11 TELA", 500, 380, escala=1)
     recursos.texto(tela, "F3 FPS", 580, 380, escala=1)

@@ -8,6 +8,7 @@ from ambiente import Ambiente
 from avaliacao import Avaliacao
 from campeao import GravadorCampeao
 from config import SEMENTE_TREINO
+from diagnostico import registrar_execucao, registro
 from humano import JogoHumano
 from interface import OPCOES_MENU, RecursosInterface, botoes_menu, desenhar, desenhar_menu, desenhar_populacao
 from janela import criar_janela, posicao_logica, taxa_atualizacao, tratar_redimensionamento
@@ -30,9 +31,11 @@ def escolher_modo(tela, recursos, relogio, aviso=""):
         for evento in pygame.event.get():
             tratar_evento_visual(evento, recursos)
             if evento.type == pygame.QUIT:
+                registro.info("Pedido de fechar a janela no menu")
                 return None
             if evento.type == pygame.KEYDOWN:
                 if evento.key == pygame.K_ESCAPE:
+                    registro.info("Saida por Escape no menu")
                     return None
                 if evento.key in (pygame.K_DOWN, pygame.K_UP):
                     selecionado = (selecionado + (1 if evento.key == pygame.K_DOWN else -1)) % len(OPCOES_MENU)
@@ -65,9 +68,11 @@ def jogar_populacao(tela, recursos, relogio):
             for evento in pygame.event.get():
                 tratar_evento_visual(evento, recursos)
                 if evento.type == pygame.QUIT:
+                    registro.info("Pedido de fechar a janela no treino")
                     return True
                 if evento.type == pygame.KEYDOWN:
                     if evento.key == pygame.K_ESCAPE:
+                        registro.info("Voltando ao menu pelo treino")
                         return False
                     if evento.key == pygame.K_TAB:
                         detalhes = not detalhes
@@ -93,6 +98,8 @@ def jogar(tela, recursos, relogio, modo, semente):
     ambiente = None
     try:
         sessao = JogoHumano() if modo == "humano" else Avaliacao(semente=semente)
+        if modo == "avaliacao":
+            semente = sessao.semente
         ambiente = Ambiente(semente)
         pygame.display.set_caption(f"PoppyAI — {modo}")
         detalhes = False
@@ -103,9 +110,11 @@ def jogar(tela, recursos, relogio, modo, semente):
             for evento in pygame.event.get():
                 tratar_evento_visual(evento, recursos)
                 if evento.type == pygame.QUIT:
+                    registro.info("Pedido de fechar a janela no modo %s", modo)
                     return True
                 if evento.type == pygame.KEYDOWN:
                     if evento.key == pygame.K_ESCAPE:
+                        registro.info("Voltando ao menu pelo modo %s", modo)
                         return False
                     if evento.key == pygame.K_TAB and modo == "avaliacao":
                         detalhes = not detalhes
@@ -114,6 +123,9 @@ def jogar(tela, recursos, relogio, modo, semente):
                             sessao.salvar_recorde(ambiente)
                         ambiente.reiniciar(semente)
                         sessao.concluida = False
+                    if evento.key == pygame.K_n and modo == "avaliacao":
+                        semente = sessao.sortear_semente()
+                        ambiente.reiniciar(semente)
                     if evento.key == pygame.K_SPACE and modo == "humano":
                         ambiente.pular_manualmente()
             for _ in range(avanco.acumular(segundos)):
@@ -140,7 +152,7 @@ def main(modo=None, semente=None):
         raise ValueError("Modo inválido.")
     if semente is not None and modo != "avaliacao":
         raise ValueError("--semente só pode ser usada no modo avaliacao.")
-    semente_partida = SEMENTE_TREINO if semente is None else semente
+    semente_partida = semente if modo == "avaliacao" else SEMENTE_TREINO
     pygame.init()
     try:
         tela = criar_janela()
@@ -155,12 +167,14 @@ def main(modo=None, semente=None):
                 modo = escolher_modo(tela, recursos, relogio, aviso)
                 if modo is None:
                     break
-                semente_partida = SEMENTE_TREINO
+                semente_partida = None if modo == "avaliacao" else SEMENTE_TREINO
             try:
+                registro.info("Abrindo modo %s", modo)
                 if jogar(tela, recursos, relogio, modo, semente_partida):
                     break
                 aviso = ""
             except (SystemExit, OSError, ValueError) as erro:
+                registro.exception("Falha no modo %s", modo)
                 if not pelo_menu:
                     raise
                 print(f"Não foi possível abrir ou continuar {modo}: {erro}")
@@ -178,8 +192,9 @@ if __name__ == "__main__":
     argumentos.add_argument("--modo", choices=("humano", "treino", "avaliacao"),
                             help="Abre uma partida diretamente; sem esta opção, mostra o menu.")
     argumentos.add_argument("--semente", type=int,
-                            help=f"Sequência de obstáculos na avaliação (padrão: {SEMENTE_TREINO}).")
+                            help="Sequência de obstáculos na avaliação (padrão: sorteada).")
     opcoes = argumentos.parse_args()
     if opcoes.semente is not None and opcoes.modo != "avaliacao":
         argumentos.error("--semente só pode ser usada no modo avaliacao.")
-    main(opcoes.modo, opcoes.semente)
+    with registrar_execucao():
+        main(opcoes.modo, opcoes.semente)

@@ -170,7 +170,7 @@ class TestJogo(unittest.TestCase):
         self.assertEqual(pygame.display.get_surface().get_size(), tamanho)
 
     def test_tab_alterna_detalhes_sem_mudar_parametros(self):
-        sessao = SimpleNamespace(concluida=False, parametros=(-1.5, 0.7, 0.2, 0.0, 0.5), recorde_treino=30,
+        sessao = SimpleNamespace(concluida=False, semente=456, parametros=(-1.5, 0.7, 0.2, 0.0, 0.5), recorde_treino=30,
                                  terminou=lambda ambiente: False)
         eventos = [[tecla(pygame.K_TAB)], [tecla(pygame.K_TAB)], [pygame.event.Event(pygame.QUIT)]]
         detalhes = []

@@ -27,5 +27,4 @@ SEMENTE_TREINO = 123
 LIMITE_TENTATIVA = None  # Sem limite de tempo: a tentativa termina na colisão.
 PASTA_CAMPEOES = Path(__file__).resolve().parent / "dados" / "campeoes"
 ARQUIVO_CAMPEAO = PASTA_CAMPEOES / "campeao.json"
-VERSAO_JOGO = 6  # Só muda quando as regras da partida mudam, não a arquitetura da IA.
-ARQUIVO_RECORDE_HUMANO = PASTA_CAMPEOES / "recorde_humano_intervalos.json"
+ARQUIVO_RECORDE_HUMANO = PASTA_CAMPEOES / "recorde_humano.json"

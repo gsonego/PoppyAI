@@ -41,7 +41,7 @@ ao menu e `Tab` abre ou fecha os detalhes da IA (treino e avaliação).
 No modo humano, a colisão mantém o resultado na tela; `R` repete a partida.
 A Poppy fica vermelha ao colidir no humano e na avaliação e permanece assim
 até reiniciar. No treino, cada Poppy que colide é removida junto com sua linha.
-Seu recorde é salvo em `recorde_humano_intervalos.json` ao morrer, reiniciar, voltar ao menu
+Seu recorde é salvo em `recorde_humano.json` ao morrer, reiniciar, voltar ao menu
 ou fechar a janela. Ele é separado dos pesos e do recorde da IA.
 
 Para entrar diretamente, use `--modo humano`, `--modo treino` ou
@@ -94,9 +94,9 @@ descritos no texto, sem uma marca visível no chão. O pedido só vira um salto
 quando o personagem está no chão e a distância é não negativa.
 
 O modelo da IA é a versão 7, com quatro pesos e um viés, salvo em
-`dados/campeoes/campeao.json`. As regras da partida são a versão 6,
-com o recorde pessoal em `recorde_humano_intervalos.json`. Os intervalos menores mudam o
-desafio. O arquivo único contém o número do experimento e a geração atual.
+`dados/campeoes/campeao.json`. Esse arquivo contém o número do experimento e a
+geração atual. O recorde pessoal fica em `recorde_humano.json`, somente com o
+tempo, e vale independentemente do experimento ou da sequência de obstáculos.
 O histórico está em [EXPERIMENTOS.md](EXPERIMENTOS.md), na ordem das mudanças.
 As forças do salto e a aceleração continuam iguais.
 

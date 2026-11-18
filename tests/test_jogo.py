@@ -2,6 +2,7 @@
 
 import contextlib
 import io
+import json
 import os
 from pathlib import Path
 import tempfile
@@ -40,6 +41,22 @@ class TestJogo(unittest.TestCase):
         original = self.caminho.read_bytes()
         sessao.salvar_recorde(SimpleNamespace(tempo_vivo=10))
         self.assertEqual(self.caminho.read_bytes(), original)
+
+    def test_recorde_antigo_independe_do_experimento_e_salva_so_tempo(self):
+        self.caminho.write_text(json.dumps({
+            "experimento": {"versao": 1, "semente": 456}, "tempo_segundos": 120,
+        }))
+        sessao = JogoHumano(self.caminho)
+        self.assertEqual(sessao.melhor_tempo, 120)
+        sessao.salvar_recorde(SimpleNamespace(tempo_vivo=10))
+        self.assertEqual(JogoHumano(self.caminho).melhor_tempo, 120)
+        sessao.salvar_recorde(SimpleNamespace(tempo_vivo=130))
+        self.assertEqual(json.loads(self.caminho.read_text()), {"tempo_segundos": 130})
+
+    def test_primeiro_recorde_cria_pasta(self):
+        caminho = Path(self.pasta.name) / "dados" / "campeoes" / "recorde_humano.json"
+        JogoHumano(caminho).salvar_recorde(SimpleNamespace(tempo_vivo=10))
+        self.assertEqual(JogoHumano(caminho).melhor_tempo, 10)
 
     def test_humano_salta_morre_reinicia_e_nao_consulta_ia(self):
         sessao = JogoHumano(self.caminho)

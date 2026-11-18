@@ -37,4 +37,8 @@ Ao mudar as regras ou entradas, incremente `VERSAO_EXPERIMENTO` e acrescente uma
 linha ao histórico. O treino começa uma busca com geração 1 e substitui a campeã
 do experimento anterior no primeiro salvamento. A avaliação recusa campeãs de
 outro experimento. Pontuações de desafios diferentes não são comparadas.
-O recorde humano continua separado dos dados da IA.
+O recorde humano usa somente `dados/campeoes/recorde_humano.json`, separado da IA
+e fora do Git. Guarda somente o tempo: é um recorde pessoal geral, independente
+do experimento e da semente. Mudanças nas regras não zeram esse recorde.
+A consolidação preservou o recorde atual
+de 67,90 segundos e removeu os arquivos humanos separados por experimento.

@@ -10,6 +10,7 @@ from config import (
     VELOCIDADE_MAXIMA, VELOCIDADE_OBSTACULO,
     VELOCIDADE_SALTO,
     INTERVALO_MINIMO_PX, TEMPO_INTERVALO_FINAL, TEMPO_INTERVALO_INICIAL, TEMPO_REDUCAO_INTERVALOS,
+    BUMERANGUE_CENTRO_Y, BUMERANGUE_TAMANHO,
 )
 
 
@@ -22,7 +23,8 @@ class GrupoObstaculo:
 
 
 class Ambiente:
-    def __init__(self, semente):
+    def __init__(self, semente, *, incluir_bumerangues=False):
+        self.incluir_bumerangues = incluir_bumerangues
         self.gerador_obstaculos = random.Random()
         self.personagem = pygame.Rect(POPPY_X, CHAO_Y - POPPY_ALTURA, POPPY_LARGURA, POPPY_ALTURA)
         self._alvo = GrupoObstaculo(pygame.Rect(LARGURA, CHAO_Y - 50, 30, 50), float(LARGURA), "simples")
@@ -67,8 +69,16 @@ class Ambiente:
                      if grupo.retangulo.left < LARGURA and grupo.retangulo.right > 0
                      for caixa in self._caixas_do_grupo(grupo))
 
+    @property
+    def bumerangues_visiveis(self):
+        return tuple(grupo.retangulo.copy() for grupo in self.grupos
+                     if grupo.tipo == "bumerangue"
+                     and grupo.retangulo.left < LARGURA and grupo.retangulo.right > 0)
+
     @staticmethod
     def _caixas_do_grupo(grupo):
+        if grupo.tipo == "bumerangue":
+            return ()
         x, y, largura, altura = grupo.retangulo
         if grupo.tipo == "lado_a_lado":
             metade = largura // 2
@@ -81,6 +91,14 @@ class Ambiente:
         return (grupo.retangulo.copy(),)
 
     def _sortear_obstaculo(self, x):
+        if self.incluir_bumerangues:
+            # Apresenta o novo desafio após a primeira caixa; depois mistura com caixas.
+            bumerangue = self._primeiro_bumerangue or self.gerador_obstaculos.randrange(3) == 0
+            self._primeiro_bumerangue = False
+            if bumerangue:
+                retangulo = pygame.Rect(round(x), BUMERANGUE_CENTRO_Y - BUMERANGUE_TAMANHO // 2,
+                                        BUMERANGUE_TAMANHO, BUMERANGUE_TAMANHO)
+                return GrupoObstaculo(retangulo, float(x), "bumerangue")
         # Metade dos sorteios mantém uma caixa simples; os demais introduzem pares.
         tipo = self.gerador_obstaculos.choice(
             ("simples", "simples", "lado_a_lado", "empilhadas"),
@@ -142,6 +160,7 @@ class Ambiente:
         self.obstaculo.size = (30, 50)
         self.obstaculo.bottom = CHAO_Y
         self.tentativa_manual = False
+        self._primeiro_bumerangue = True
 
     def reiniciar_manualmente(self):
         # Preserva o comportamento de R: mantém tamanho e sequência atuais.

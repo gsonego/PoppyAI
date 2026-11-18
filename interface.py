@@ -8,6 +8,7 @@ from apresentacao import VistaAmbiente
 
 from art.cenario import CREME, ROSA, TINTA, PaisagemParalaxe, criar_faixa_chao, desenhar_chao
 from art.animacao_poppy import carregar_corrida, quadro_corrida
+from art.bumerangue import criar_quadros, quadro_bumerangue
 from art.fonte_pixel import FontePixel
 from config import ALTURA, CHAO_Y, LARGURA, POPPY_DESLOCAMENTO_VISUAL_X
 from janela import apresentar, estado_apresentacao
@@ -27,6 +28,7 @@ class RecursosInterface:
         self.sons = Sons()
         self.paisagem = PaisagemParalaxe()
         self.faixa_chao = criar_faixa_chao()
+        self.bumerangues = criar_quadros()
         caminho = Path(__file__).resolve().parent / "art" / "source" / "poppy-aprovada.png"
         imagem = pygame.image.load(caminho).convert_alpha()
         self.poppy = imagem.subsurface(imagem.get_bounding_rect(min_alpha=128))
@@ -56,6 +58,13 @@ class RecursosInterface:
     def desenhar_fundo(self, tela, distancia=0):
         self.paisagem.desenhar(tela, distancia)
         desenhar_chao(tela, self.faixa_chao, distancia)
+
+    def desenhar_obstaculos(self, tela, ambiente):
+        for caixa in ambiente.caixas_visiveis:
+            desenhar_caixa(tela, caixa)
+        quadro = self.bumerangues[quadro_bumerangue(ambiente.distancia_percorrida)]
+        for bumerangue in ambiente.bumerangues_visiveis:
+            tela.blit(quadro, quadro.get_rect(center=bumerangue.center))
 
     def sprite_corrida(self, altura, indice):
         chave = ("corrida", altura, indice)
@@ -202,8 +211,7 @@ def desenhar_populacao(tela, recursos, treino, detalhes=False):
     vivos = treino.vivos
     visual = recursos.visual(ambiente)
     recursos.desenhar_fundo(tela, visual.distancia_percorrida)
-    for caixa in visual.caixas_visiveis:
-        desenhar_caixa(tela, caixa)
+    recursos.desenhar_obstaculos(tela, visual)
     # Destinos distribuídos na frente da caixa tornam as linhas sobrepostas mais visíveis.
     if ambiente.obstaculo.right >= ambiente.personagem.left:
         for poppy in vivos:
@@ -245,8 +253,7 @@ def desenhar_populacao(tela, recursos, treino, detalhes=False):
 def desenhar(tela, recursos, ambiente, sessao, modo="treino", detalhes=False):
     visual = recursos.visual(ambiente)
     recursos.desenhar_fundo(tela, visual.distancia_percorrida)
-    for caixa in visual.caixas_visiveis:
-        desenhar_caixa(tela, caixa)
+    recursos.desenhar_obstaculos(tela, visual)
     desenhar_poppy(tela, recursos, ambiente)
     recursos.texto(tela, "POPPY", 24, 22, escala=3)
     recursos.texto(tela, ".AI", 116, 24, ROSA)

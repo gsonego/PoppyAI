@@ -28,3 +28,15 @@ class VistaAmbiente:
                 deslocamento = x - grupo.retangulo.x
                 caixas.extend(c.move(deslocamento, 0) for c in self._ambiente._caixas_do_grupo(grupo))
         return tuple(caixas)
+
+    @property
+    def bumerangues_visiveis(self):
+        retangulos = []
+        for grupo in self._ambiente.grupos:
+            if grupo.tipo != "bumerangue":
+                continue
+            retangulo = grupo.retangulo.copy()
+            retangulo.x = round(grupo.x + self._deslocamento)
+            if retangulo.left < LARGURA and retangulo.right > 0:
+                retangulos.append(retangulo)
+        return tuple(retangulos)

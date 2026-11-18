@@ -111,25 +111,47 @@ class Ambiente:
                     pygame.Rect(x, y + metade, largura, altura - metade))
         return (grupo.retangulo.copy(),)
 
-    def _sortear_obstaculo(self, x):
-        apresentacao_concluida = not self._primeiro_tunel and not self._primeiro_passarinho
-        if self.incluir_pedras and (self._primeira_pedra or (
-            apresentacao_concluida and self.gerador_obstaculos.randrange(5) == 0
-        )):
-            return self._criar_pedra(x)
-        if self.incluir_passarinhos and not self._primeiro_tunel:
-            # Apresenta os três desafios antes de passar à mistura aleatória.
-            if self._primeiro_passarinho or self.gerador_obstaculos.randrange(4) == 0:
-                return self._criar_passarinho(x)
+    def _sortear_desafio(self):
+        # A breve apresentação inicial mantém os obstáculos novos acessíveis.
+        if self._primeira_pedra:
+            return "pedra"
+        if self._primeiro_tunel:
+            return "tunel"
+        if self._primeiro_passarinho:
+            return "passarinho"
+        pesos = {"caixa": 4}
+        if self.incluir_pedras:
+            pesos["pedra"] = 2
+        if self.incluir_passarinhos:
+            pesos["passarinho"] = 2
         if self.incluir_tuneis:
-            # Apresenta o novo desafio após a primeira caixa; depois mistura com caixas.
-            tunel = self._primeiro_tunel or self.gerador_obstaculos.randrange(3) == 0
+            pesos["tunel"] = 2
+        anteriores = self._ultimos_desafios
+        if (anteriores and anteriores[-1] == "tunel") or (self.grupos and self.grupos[-1].tipo == "tunel"):
+            pesos.pop("tunel", None)
+        if anteriores and anteriores[-1] in pesos and len(pesos) > 1:
+            repetido = anteriores[-1]
+            if len(anteriores) == 2 and anteriores[0] == repetido:
+                del pesos[repetido]
+            else:
+                pesos[repetido] = 1
+        if len(pesos) == 1:
+            return next(iter(pesos))
+        return self.gerador_obstaculos.choices(tuple(pesos), weights=tuple(pesos.values()), k=1)[0]
+
+    def _sortear_obstaculo(self, x):
+        desafio = self._sortear_desafio()
+        self._ultimos_desafios = (self._ultimos_desafios + [desafio])[-2:]
+        if desafio == "pedra":
+            return self._criar_pedra(x)
+        if desafio == "passarinho":
+            return self._criar_passarinho(x)
+        if desafio == "tunel":
             self._primeiro_tunel = False
-            if tunel:
-                comprimento = self.gerador_obstaculos.choice(TUNEL_COMPRIMENTOS)
-                retangulo = pygame.Rect(round(x), CHAO_Y - TUNEL_ALTURA_TOTAL,
-                                        comprimento, TUNEL_ALTURA_TOTAL - TUNEL_PASSAGEM_ALTURA)
-                return GrupoObstaculo(retangulo, float(x), "tunel")
+            comprimento = self.gerador_obstaculos.choice(TUNEL_COMPRIMENTOS)
+            retangulo = pygame.Rect(round(x), CHAO_Y - TUNEL_ALTURA_TOTAL,
+                                    comprimento, TUNEL_ALTURA_TOTAL - TUNEL_PASSAGEM_ALTURA)
+            return GrupoObstaculo(retangulo, float(x), "tunel")
         # Metade dos sorteios mantém uma caixa simples; os demais introduzem pares.
         tipo = self.gerador_obstaculos.choice(
             ("simples", "simples", "lado_a_lado", "empilhadas"),
@@ -180,11 +202,7 @@ class Ambiente:
             else:
                 intervalo = self._sortear_intervalo()
                 x = anterior.x + anterior.retangulo.width + intervalo
-                if anterior.tipo == "tunel" and self.incluir_pedras:
-                    # Exige levantar após o túnel; mantém toda a margem de reação.
-                    proximo = self._criar_pedra(x)
-                else:
-                    proximo = self._sortear_obstaculo(x)
+                proximo = self._sortear_obstaculo(x)
             proximo.intervalo_anterior = intervalo
             self.grupos.append(proximo)
         self._alvo = next((g for g in self.grupos if g.retangulo.right > self.personagem.left), self.grupos[-1])
@@ -217,6 +235,7 @@ class Ambiente:
         self._primeiro_tunel = self.incluir_tuneis
         self._primeiro_passarinho = self.incluir_passarinhos
         self._primeira_pedra = self.incluir_pedras
+        self._ultimos_desafios = ["caixa"]
 
     def reiniciar_manualmente(self):
         # Preserva o comportamento de R: mantém tamanho e sequência atuais.

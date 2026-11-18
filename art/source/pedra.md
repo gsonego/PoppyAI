@@ -11,8 +11,9 @@ O salto também permite passar pela pedra isolada. Desde o experimento 10, nos t
 é seguida por um pássaro separado, com intervalo próximo de 0,1 segundo e no
 mínimo 32 pixels a partir da sua saída. A arte da pedra continua independente,
 sem nenhuma ligação visual com o pássaro. A sequência penaliza saltos feitos
-perto da pedra; caminhar em pé permite atravessar os dois. Desde o experimento
-11, todo túnel é seguido de uma pedra com intervalo normal, e depois do pássaro.
+perto da pedra; caminhar em pé permite atravessar os dois. O experimento 11
+obrigava pedra após todo túnel. Desde o 12, o sucessor do túnel é sorteado entre
+caixa, pedra e pássaro, mantendo margem normal e evitando túneis consecutivos.
 O intervalo curto atual é de 0,10 s, reduzido dos 0,30 s do experimento 10.
 
 Para regenerar a arte:

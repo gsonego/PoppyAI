@@ -1,4 +1,4 @@
-"""Pássaro mais perto e pedra obrigatória depois de cada túnel."""
+"""Intervalo curto mantido e margem normal depois dos túneis."""
 
 import contextlib
 import io
@@ -23,11 +23,11 @@ class TestExperimento11(unittest.TestCase):
         for velocidade in (350, 450, 550, 650):
             self.assertLess(max(32, round(velocidade * 0.1)), max(90, round(velocidade * 0.3)))
 
-    def test_cada_comprimento_de_tunel_recebe_pedra_e_passaro_com_espaco_correto(self):
+    def test_cada_comprimento_de_tunel_tem_margem_ate_proximo_desafio(self):
         for comprimento in TUNEL_COMPRIMENTOS:
             for velocidade in (350, 450, 550, 650):
                 ambiente = Ambiente(123, incluir_tuneis=True, incluir_passarinhos=True, incluir_pedras=True)
-                ambiente._sortear_obstaculo(0)  # Apresentação da primeira pedra.
+                ambiente._sortear_obstaculo(0)
                 with patch.object(ambiente.gerador_obstaculos, "choice", return_value=comprimento):
                     tunel = ambiente._sortear_obstaculo(0)
                 ambiente.grupos = [tunel]
@@ -35,11 +35,9 @@ class TestExperimento11(unittest.TestCase):
                 ambiente.tempo_vivo = (velocidade - 350) / 2.5
                 with patch.object(ambiente, "_sortear_intervalo", return_value=INTERVALO_MINIMO_PX):
                     ambiente._completar_pista()
-                tunel, pedra, passaro = ambiente.grupos[:3]
-                self.assertEqual([tunel.tipo, pedra.tipo, passaro.tipo], ["tunel", "pedra", "passarinho"])
-                self.assertEqual(pedra.retangulo.left - tunel.retangulo.right, INTERVALO_MINIMO_PX)
-                self.assertEqual(passaro.retangulo.left - pedra.retangulo.right,
-                                 max(32, round(velocidade * 0.1)))
+                proximo = ambiente.grupos[1]
+                self.assertNotEqual(proximo.tipo, "tunel")
+                self.assertEqual(proximo.retangulo.left - tunel.retangulo.right, INTERVALO_MINIMO_PX)
 
     def test_percurso_real_nao_tem_tuneis_consecutivos_e_repete_apos_reiniciar(self):
         def percurso(ambiente):
@@ -59,7 +57,7 @@ class TestExperimento11(unittest.TestCase):
             self.assertIn("tunel", [tipo for tipo, _, _ in primeira])
             for anterior, proximo in zip(primeira, primeira[1:]):
                 if anterior[0] == "tunel":
-                    self.assertEqual(proximo[0], "pedra")
+                    self.assertNotEqual(proximo[0], "tunel")
                     self.assertGreaterEqual(proximo[2], INTERVALO_MINIMO_PX)
             ambiente.reiniciar(semente)
             self.assertEqual(percurso(ambiente), primeira)
@@ -75,7 +73,7 @@ class TestExperimento11(unittest.TestCase):
             self.assertIsNone(treino.melhores_parametros)
             self.assertEqual(caminho.read_bytes(), original)
             treino.salvar_melhor(forcar=True)
-            self.assertEqual(VERSAO_EXPERIMENTO, 11)
+            self.assertEqual(VERSAO_EXPERIMENTO, 12)
             historico = json.loads(caminho.with_name("historico_experimentos.json").read_text())
             self.assertEqual((historico[0]["experimento"]["versao"], historico[0]["tempo_segundos"],
                               historico[0]["geracao_final"]), (10, 90.47, 91))

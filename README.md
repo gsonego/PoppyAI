@@ -57,12 +57,18 @@ passa; correndo em pé, saltando ou levantando dentro, colide com o teto.
 O topo é alto demais para ultrapassar com o salto atual. A base é decorativa e
 não levanta a personagem nem cria paredes nas entradas.
 
-A apresentação inicial é caixa, pedra, pássaro e túnel. Depois há chance de
-1/5 de sortear pedra antes dos demais sorteios, com um pássaro logo depois.
-Nos outros sorteios, há chance de 1/4 de passarinho e, nas opções restantes,
-1/3 de túnel, com caixas nos demais casos. A aceleração e os intervalos
-continuam iguais. A distância até o desafio seguinte é contada da saída do
-anterior, inclusive nos túneis longos. Segure `↓` até sair completamente.
+A apresentação inicial é caixa, pedra, pássaro e túnel. Depois, o sorteio escolhe
+entre quatro famílias: caixas, pedras, pássaros e túneis. Os pesos-base são
+4 para caixas e 2 para cada outra família. A família escolhida por último fica
+com peso 1 na escolha seguinte; duas escolhas seguidas da mesma família a
+retiram temporariamente das opções. As três variantes de caixa contam como
+uma família. Pedra e seu pássaro acompanhante contam como um desafio combinado.
+
+Depois de um túnel podem vir caixa, pedra ou pássaro, com intervalo normal e
+sem outro túnel imediatamente em seguida. Não existe mais pedra obrigatória
+na saída. A aceleração e os intervalos continuam iguais. A distância até o
+próximo desafio é contada da saída do anterior, inclusive nos túneis longos.
+Segure `↓` até sair completamente.
 
 O túnel permanece como alvo enquanto sua saída estiver à frente da traseira da
 área de colisão da Poppy. A distância até sua entrada fica negativa durante a
@@ -85,24 +91,22 @@ Os três modos recebem também pedras de 32 × 10 pixels. Em pé,
 a Poppy passa com a corrida normal, sem subir ou descer; abaixada, a faixa
 frontal de 12 pixels da sua colisão encontra a pedra. Saltar também permite
 passar. Depois que o focinho ultrapassa a rocha, pode abaixar novamente.
-A apresentação inicial é caixa, pedra, pássaro e túnel; depois,
-há uma chance de 1/5 de pedra antes dos demais sorteios. Cada pedra é seguida
+Cada pedra é seguida
 por um pássaro separado: sua frente vem cerca de 0,1 segundo depois da saída
 da pedra, com distância mínima de 32 pixels. O intervalo é calculado pela
 velocidade quando o pássaro é gerado. Correr em pé passa pelos dois; abaixar
 na pedra causa colisão, e saltar perto dela pode encontrar o pássaro logo depois.
 Pedra e pássaro têm posições, desenho, colisão e alvo independentes. Depois
 do pássaro, o próximo obstáculo volta a respeitar o intervalo normal completo.
-O experimento 11 usa essa mistura no treino e na avaliação. As 50 candidatas
+O experimento 12 usa essa mistura no treino e na avaliação. As 50 candidatas
 enfrentam a mesma sequência e aprendem a alternar entre correr, saltar e abaixar.
 Altura e largura permitem distinguir a pedra das caixas, sem uma entrada com o
 nome do obstáculo. A rede continua 5/4/2, com 34 parâmetros. Ficar sempre abaixada
 agora falha na pedra; um salto antecipado ainda pode ser uma solução válida.
-Todo túnel é seguido obrigatoriamente por uma pedra, mantendo o intervalo
-normal a partir da saída (no mínimo 567 pixels), e depois pelo pássaro próximo.
-Isso dá tempo de sair e levantar e impede dois túneis consecutivos.
+O sucessor do túnel é sorteado, mantendo o intervalo normal a partir da saída
+(no mínimo 567 pixels). Não há dois túneis consecutivos.
 A rede continua livre para escolher a postura nos espaços entre obstáculos.
-O novo treino começa com pesos aleatórios e geração 1; o resultado do 10 é
+O novo treino começa com pesos aleatórios e geração 1; o resultado do 11 é
 registrado no histórico antes do primeiro salvamento da nova campeã.
 
 No modo humano, a colisão mantém o resultado na tela; `R` repete a partida.
@@ -164,12 +168,12 @@ negativa até o alvo. Não há regras que forcem a ação por tipo de obstáculo
 A marca de distância única do antigo modelo linear foi retirada: a camada
 intermediária permite decisões que não têm um único limiar de salto.
 
-O experimento atual é o **11**, com 34 parâmetros: quatro blocos de cinco pesos
+O experimento atual é o **12**, com 34 parâmetros: quatro blocos de cinco pesos
 mais viés para a camada intermediária (24 valores), seguidos de dois blocos de
 quatro pesos mais viés para as saídas (10 valores), na ordem salto e abaixar.
 O arquivo único `dados/campeoes/campeao.json` guarda a arquitetura, os parâmetros,
 o experimento, o recorde e a geração atual. Ao iniciar a nova busca, pesos antigos
-não são reaproveitados. No primeiro salvamento, o resultado do experimento 10 é
+não são reaproveitados. No primeiro salvamento, o resultado do experimento 11 é
 registrado no histórico local antes da substituição da campeã.
 
 O recorde pessoal continua em `recorde_humano.json`, somente com o tempo, e vale

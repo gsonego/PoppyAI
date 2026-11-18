@@ -69,7 +69,7 @@ class TestPassarinho(unittest.TestCase):
     def test_interpolacao_e_separacao_das_caixas(self):
         ambiente = self.criar_perto()
         ambiente.avancar(False)
-        self.assertFalse(ambiente.caixas_visiveis)
+        self.assertFalse(any(c.colliderect(ambiente.obstaculo) for c in ambiente.caixas_visiveis))
         self.assertFalse(ambiente.tuneis_visiveis)
         original = ambiente.obstaculo.copy()
         retangulo = VistaAmbiente(ambiente, 0).passarinhos_visiveis[0]

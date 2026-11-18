@@ -96,12 +96,12 @@ class TestPedra(unittest.TestCase):
                 ambiente.avancar(False)
                 original = pedra.retangulo.copy()
                 self.assertGreater(VistaAmbiente(ambiente, 0).pedras_visiveis[0].x, original.x)
-                self.assertFalse(ambiente.caixas_visiveis)
+                self.assertFalse(any(c.colliderect(pedra.retangulo) for c in ambiente.caixas_visiveis))
                 recursos = RecursosInterface()
                 self.assertEqual(recursos.pedra.get_size(), (PEDRA_LARGURA, PEDRA_ALTURA))
                 with patch("interface.apresentar"), patch("interface.desenhar_caixa") as caixa:
                     desenhar(tela, recursos, ambiente, SimpleNamespace(melhor_tempo=0), "humano")
-                    caixa.assert_not_called()
+                    self.assertEqual(caixa.call_count, len(ambiente.caixas_visiveis))
                 self.assertEqual(pedra.retangulo, original)
             finally:
                 pygame.quit()

@@ -60,8 +60,8 @@ class TestJogo(unittest.TestCase):
 
     def test_humano_salta_morre_reinicia_e_nao_consulta_ia(self):
         sessao = JogoHumano(self.caminho)
-        eventos = [[tecla(pygame.K_SPACE)]] + [[] for _ in range(179)]
-        eventos += [[tecla(pygame.K_r)], [tecla(pygame.K_SPACE)], [pygame.event.Event(pygame.QUIT)]]
+        eventos = [[tecla(pygame.K_UP)]] + [[] for _ in range(179)]
+        eventos += [[tecla(pygame.K_r)], [tecla(pygame.K_UP)], [pygame.event.Event(pygame.QUIT)]]
         estados = []
         desenho = main.desenhar
 

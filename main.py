@@ -112,6 +112,11 @@ def jogar(tela, recursos, relogio, modo, semente):
                 if evento.type == pygame.QUIT:
                     registro.info("Pedido de fechar a janela no modo %s", modo)
                     return True
+                if modo == "humano":
+                    if evento.type in (pygame.KEYDOWN, pygame.KEYUP) and evento.key == pygame.K_DOWN:
+                        ambiente.definir_abaixada(evento.type == pygame.KEYDOWN)
+                    elif evento.type == pygame.WINDOWFOCUSLOST:
+                        ambiente.definir_abaixada(False)
                 if evento.type == pygame.KEYDOWN:
                     if evento.key == pygame.K_ESCAPE:
                         registro.info("Voltando ao menu pelo modo %s", modo)
@@ -126,7 +131,7 @@ def jogar(tela, recursos, relogio, modo, semente):
                     if evento.key == pygame.K_n and modo == "avaliacao":
                         semente = sessao.sortear_semente()
                         ambiente.reiniciar(semente)
-                    if evento.key == pygame.K_SPACE and modo == "humano":
+                    if evento.key == pygame.K_UP and modo == "humano":
                         ambiente.pular_manualmente()
             for _ in range(avanco.acumular(segundos)):
                 if sessao.concluida:

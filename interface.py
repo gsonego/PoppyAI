@@ -30,7 +30,10 @@ class RecursosInterface:
         self.poppy = imagem.subsurface(imagem.get_bounding_rect(min_alpha=128))
         imagem_atingida = pygame.image.load(caminho.with_name("poppy-atingida.png")).convert_alpha()
         self.poppy_atingida = imagem_atingida.subsurface(imagem_atingida.get_bounding_rect(min_alpha=128))
+        imagem_abaixada = pygame.image.load(caminho.with_name("poppy-abaixada.png")).convert_alpha()
+        self.poppy_abaixada = imagem_abaixada.subsurface(imagem_abaixada.get_bounding_rect(min_alpha=128))
         self.corrida = carregar_corrida(caminho.with_name("poppy-corrida-proposta.png"))
+        self.corrida_abaixada = carregar_corrida(caminho.with_name("poppy-corrida-abaixada.png"))
         self._sprites = {}
         self.interpolacao = 1.0
         self.mostrar_diagnostico = False
@@ -66,6 +69,19 @@ class RecursosInterface:
             tamanho = (round(self.poppy.get_width() * altura / self.poppy.get_height()), altura)
             imagem = self.poppy_atingida if atingida else self.poppy
             self._sprites[chave] = pygame.transform.scale(imagem, tamanho)
+        return self._sprites[chave]
+
+    def sprite_abaixada(self, atingida=False, indice=0):
+        chave = ("abaixada", atingida, indice)
+        if chave not in self._sprites:
+            altura = 38
+            quadro = self.corrida_abaixada[indice]
+            # Mantém a largura aprovada da pose baixa, com o mesmo tamanho em todo o ciclo.
+            tamanho = (round(self.poppy_abaixada.get_width() * altura / self.poppy_abaixada.get_height()), altura)
+            sprite = pygame.transform.scale(quadro, tamanho)
+            if atingida:
+                sprite.fill((255, 90, 90), special_flags=pygame.BLEND_RGB_MULT)
+            self._sprites[chave] = sprite
         return self._sprites[chave]
 
     def texto(self, tela, conteudo, x, y, cor=TINTA, escala=2):
@@ -158,7 +174,10 @@ def desenhar_decisao(tela, recursos, ambiente, sessao, modo, mostrar_sensor=True
 def desenhar_poppy(tela, recursos, ambiente, transparente=False):
     ambiente = recursos.visual(ambiente)
     # Corpo e cabeça colidem; pontas das orelhas e cauda são decorativas.
-    if ambiente.fim_de_jogo:
+    if ambiente.abaixada:
+        indice = quadro_corrida(ambiente.distancia_percorrida)
+        sprite = recursos.sprite_abaixada(atingida=ambiente.fim_de_jogo, indice=indice)
+    elif ambiente.fim_de_jogo:
         sprite = recursos.sprite(76, atingida=True)
     else:
         # No ar, mantém uma pose com as patas recolhidas até o pouso.
@@ -244,7 +263,9 @@ def desenhar(tela, recursos, ambiente, sessao, modo="treino", detalhes=False):
     pygame.draw.rect(tela, CREME, (0, 368, LARGURA, 32))
     recursos.texto(tela, "R REINICIAR", 24, 380, escala=1)
     if modo in ("humano", "treino"):
-        recursos.texto(tela, "ESPACO SALTAR", 174, 380, escala=1)
+        recursos.texto(tela, "CIMA SALTAR", 174, 380, escala=1)
+        if modo == "humano":
+            recursos.texto(tela, "BAIXO ABAIXAR", 278, 380, escala=1)
     elif modo == "avaliacao":
         recursos.texto(tela, "N NOVA SEQUENCIA", 174, 380, escala=1)
     recursos.texto(tela, "ESC MENU", 380, 380, escala=1)

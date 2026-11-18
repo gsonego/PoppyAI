@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import pygame
 
 from config import (
-    ACELERACAO_OBSTACULO, CHAO_Y, GRAVIDADE, LARGURA, PASSO, POPPY_ALTURA, POPPY_LARGURA, POPPY_X,
+    ACELERACAO_OBSTACULO, CHAO_Y, GRAVIDADE, LARGURA, PASSO, POPPY_ALTURA, POPPY_ALTURA_ABAIXADA, POPPY_LARGURA, POPPY_X,
     VELOCIDADE_MAXIMA, VELOCIDADE_OBSTACULO,
     VELOCIDADE_SALTO,
     INTERVALO_MINIMO_PX, TEMPO_INTERVALO_FINAL, TEMPO_INTERVALO_INICIAL, TEMPO_REDUCAO_INTERVALOS,
@@ -118,6 +118,9 @@ class Ambiente:
         self._alvo = next((g for g in self.grupos if g.retangulo.right > self.personagem.left), self.grupos[-1])
 
     def _reposicionar(self):
+        self.abaixada = False
+        self.pedido_abaixar = False
+        self.personagem.height = POPPY_ALTURA
         self.posicao_y = float(CHAO_Y - self.personagem.height)
         self.personagem.y = round(self.posicao_y)
         self.velocidade_y = 0.0
@@ -146,8 +149,27 @@ class Ambiente:
         self.tentativa_manual = True
 
     def _pular(self):
+        if self.abaixada:
+            return
         self.velocidade_y = VELOCIDADE_SALTO
         self.no_chao = False
+
+    def definir_abaixada(self, pedido):
+        if self.fim_de_jogo:
+            return
+        self.pedido_abaixar = bool(pedido)
+        self._atualizar_postura()
+
+    def _atualizar_postura(self):
+        abaixada = self.pedido_abaixar and self.no_chao
+        if abaixada == self.abaixada:
+            return
+        self.abaixada = abaixada
+        self.personagem.height = POPPY_ALTURA_ABAIXADA if abaixada else POPPY_ALTURA
+        self.personagem.bottom = CHAO_Y
+        self.posicao_y = float(self.personagem.y)
+        # Mudança de postura é imediata, mantendo os pés apoiados no chão.
+        self.posicao_y_anterior = self.posicao_y
 
     def pular_manualmente(self):
         if self.no_chao and not self.fim_de_jogo:
@@ -169,6 +191,8 @@ class Ambiente:
             self.velocidade_y = 0.0
             self.no_chao = True
         self.personagem.y = round(self.posicao_y)
+
+        self._atualizar_postura()
 
         deslocamento = self.velocidade * PASSO
         self.distancia_percorrida += deslocamento

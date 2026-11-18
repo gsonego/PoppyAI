@@ -36,8 +36,17 @@ avaliação, a Poppy fica vermelha; no treino coletivo, ela desaparece. No menu
 ela permanece parada. Quadros e tamanhos são carregados e
 guardados em memória, sem leitura de imagem a cada quadro. A animação por si só não altera a física nem a política.
 
-Durante a partida: `Espaço` salta no humano, `R` reinicia no humano e na avaliação, `Esc` volta
+Durante a partida: `↑` salta no humano, `R` reinicia no humano e na avaliação, `Esc` volta
 ao menu e `Tab` abre ou fecha os detalhes da IA (treino e avaliação).
+No humano, segurar `↓` abaixa a Poppy no chão; soltar levanta. A colisão passa
+de 48 × 56 para 48 × 32 pixels, com a mesma largura e apoio no chão. Abaixada,
+ela não salta. No ar, mantém a pose de salto; se continuar segurando ao pousar,
+ela abaixa. Perder o foco da janela libera o comando; R reinicia em pé.
+A pose abaixada também fica vermelha na colisão. Nesta etapa só o humano
+recebe esse comando; os obstáculos voadores e a adaptação da IA ficam para depois.
+A corrida abaixada usa quatro poses de patas, guiadas pelos mesmos 32 pixels
+percorridos por quadro da corrida em pé. Ao colidir, congela no quadro atual,
+com a cor vermelha. A animação mantém a área de colisão de 48 × 32 pixels.
 No modo humano, a colisão mantém o resultado na tela; `R` repete a partida.
 A Poppy fica vermelha ao colidir no humano e na avaliação e permanece assim
 até reiniciar. No treino, cada Poppy que colide é removida junto com sua linha.
@@ -226,7 +235,7 @@ uma Poppy. O arquivo e o formato da campeã continuam compatíveis com a avalia�
 `N` salva a melhor pontuação alcançada e avança a geração, mesmo com Poppys vivas.
 Não há limite de duração; use essa tecla se alguma continuar sobrevivendo.
 `Tab` abre os pesos e a marca de salto da representante; `Esc` volta ao menu
-salvando o melhor progresso. `Espaço` e `R` ficam desativados no treino coletivo.
+salvando o melhor progresso. `↑`, `↓` e `R` ficam desativados no treino coletivo.
 Poppys que fazem os mesmos movimentos podem se sobrepor, embora sejam simuladas
 e pontuadas separadamente. O número da geração é salvo junto da campeã, inclusive
 quando não há novo recorde. Ao reabrir, a contagem é retomada; a corrida recomeça

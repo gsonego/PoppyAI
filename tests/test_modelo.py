@@ -27,6 +27,9 @@ from geracoes import TreinoGeracoes
 
 class TestCiclo(unittest.TestCase):
     def setUp(self):
+        gravador = patch("main.GravadorMetricas")
+        gravador.start()
+        self.addCleanup(gravador.stop)
         self.temporario = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporario.cleanup)
         self.caminho = Path(self.temporario.name) / "campeao.json"

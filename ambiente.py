@@ -23,6 +23,8 @@ class GrupoObstaculo:
     x: float
     tipo: str
     intervalo_anterior: int = 0
+    numero: int = 0
+    anterior: dict | None = None
 
 
 class Ambiente:
@@ -190,7 +192,7 @@ class Ambiente:
     def _completar_pista(self):
         self.grupos = [grupo for grupo in self.grupos if grupo.retangulo.right >= 0]
         if not self.grupos:
-            self.grupos.append(self._sortear_obstaculo(LARGURA))
+            self._adicionar_grupo(self._sortear_obstaculo(LARGURA))
         while self.grupos[-1].retangulo.left < LARGURA:
             anterior = self.grupos[-1]
             if anterior.tipo == "pedra" and self.incluir_pedras and self.incluir_passarinhos:
@@ -204,8 +206,21 @@ class Ambiente:
                 x = anterior.x + anterior.retangulo.width + intervalo
                 proximo = self._sortear_obstaculo(x)
             proximo.intervalo_anterior = intervalo
-            self.grupos.append(proximo)
+            self._adicionar_grupo(proximo)
         self._alvo = next((g for g in self.grupos if g.retangulo.right > self.personagem.left), self.grupos[-1])
+
+    @staticmethod
+    def descrever_grupo(grupo):
+        return {"numero": grupo.numero, "tipo": grupo.tipo, "largura": grupo.retangulo.width,
+                "altura": grupo.retangulo.height, "elevacao": CHAO_Y - grupo.retangulo.bottom,
+                "intervalo_anterior": grupo.intervalo_anterior}
+
+    def _adicionar_grupo(self, grupo):
+        grupo.numero = self._proximo_numero
+        self._proximo_numero += 1
+        grupo.anterior = self._ultimo_gerado
+        self._ultimo_gerado = self.descrever_grupo(grupo)
+        self.grupos.append(grupo)
 
     def _reposicionar(self):
         self.abaixada = False
@@ -215,7 +230,7 @@ class Ambiente:
         self.personagem.y = round(self.posicao_y)
         self.velocidade_y = 0.0
         self.no_chao = True
-        self._alvo = GrupoObstaculo(self.obstaculo.copy(), float(LARGURA), self.tipo_obstaculo)
+        self._alvo = GrupoObstaculo(self.obstaculo.copy(), float(LARGURA), self.tipo_obstaculo, numero=1)
         self.grupos = [self._alvo]
         self.obstaculo_x = float(LARGURA)
         self.obstaculo.x = round(self.obstaculo_x)
@@ -224,6 +239,9 @@ class Ambiente:
         self.distancia_anterior = 0.0
         self.posicao_y_anterior = self.posicao_y
         self.fim_de_jogo = False
+        self.grupo_colisao = None
+        self._proximo_numero = 2
+        self._ultimo_gerado = self.descrever_grupo(self._alvo)
 
     def reiniciar(self, semente):
         self._reposicionar()
@@ -231,6 +249,7 @@ class Ambiente:
         self.tipo_obstaculo = "simples"
         self.obstaculo.size = (30, 50)
         self.obstaculo.bottom = CHAO_Y
+        self._ultimo_gerado = self.descrever_grupo(self._alvo)
         self.tentativa_manual = False
         self._primeiro_tunel = self.incluir_tuneis
         self._primeiro_passarinho = self.incluir_passarinhos
@@ -305,7 +324,8 @@ class Ambiente:
         self._completar_pista()
 
         # Os pares não têm vãos: a união é um retângulo, usado também no sensor.
-        if any(self._colidiu(grupo) for grupo in self.grupos):
+        self.grupo_colisao = next((grupo for grupo in self.grupos if self._colidiu(grupo)), None)
+        if self.grupo_colisao is not None:
             self.fim_de_jogo = True
         else:
             self.tempo_vivo += PASSO

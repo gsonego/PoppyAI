@@ -39,3 +39,4 @@ LIMITE_TENTATIVA = None  # Sem limite de tempo: a tentativa termina na colisão.
 PASTA_CAMPEOES = Path(__file__).resolve().parent / "dados" / "campeoes"
 ARQUIVO_CAMPEAO = PASTA_CAMPEOES / "campeao.json"
 ARQUIVO_RECORDE_HUMANO = PASTA_CAMPEOES / "recorde_humano.json"
+PASTA_TREINOS = Path(__file__).resolve().parent / "dados" / "treinos"

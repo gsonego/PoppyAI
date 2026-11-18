@@ -1,0 +1,2 @@
+# Opcional para exportar gráficos; a coleta do treino usa somente a biblioteca padrão.
+matplotlib>=3.9,<4

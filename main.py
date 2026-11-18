@@ -6,8 +6,9 @@ import pygame
 
 from ambiente import Ambiente
 from avaliacao import Avaliacao
-from campeao import GravadorCampeao
-from config import SEMENTE_TREINO
+from campeao import GravadorCampeao, VERSAO_EXPERIMENTO
+from config import SEMENTE_TREINO, PASTA_TREINOS, ARQUIVO_CAMPEAO
+from metricas import GravadorMetricas
 from diagnostico import registrar_execucao, registro
 from humano import JogoHumano
 from interface import OPCOES_MENU, RecursosInterface, botoes_menu, desenhar, desenhar_menu, desenhar_populacao
@@ -62,9 +63,10 @@ def escolher_modo(tela, recursos, relogio, aviso=""):
 
 def jogar_populacao(tela, recursos, relogio):
     gravador = GravadorCampeao()
+    metricas = GravadorMetricas(PASTA_TREINOS / f"experimento_{VERSAO_EXPERIMENTO}.jsonl", ARQUIVO_CAMPEAO)
     treino = None
     try:
-        treino = TreinoGeracoes(salvar=gravador.agendar)
+        treino = TreinoGeracoes(salvar=gravador.agendar, registrar=metricas.agendar)
         pygame.display.set_caption("PoppyAI — treino de 50 Poppys")
         detalhes = False
         avanco = AvancoFixo()
@@ -85,6 +87,9 @@ def jogar_populacao(tela, recursos, relogio):
                         detalhes = not detalhes
                     if evento.key == pygame.K_n:
                         treino.proxima_geracao()
+                    if evento.key == pygame.K_g:
+                        treino.registrar_geracao("grafico", definitiva=False)
+                        metricas.solicitar_graficos()
             for _ in range(avanco.acumular(segundos)):
                 treino.avancar()
             recursos.interpolacao = avanco.fracao
@@ -92,9 +97,15 @@ def jogar_populacao(tela, recursos, relogio):
     finally:
         try:
             if treino is not None:
-                treino.salvar_melhor(forcar=True)
+                try:
+                    treino.salvar_melhor(forcar=True)
+                finally:
+                    treino.finalizar_registro()
         finally:
-            gravador.fechar()
+            try:
+                gravador.fechar()
+            finally:
+                metricas.fechar()
 
 
 def jogar(tela, recursos, relogio, modo, semente):

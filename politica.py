@@ -48,3 +48,4 @@ def aplicar_politica(ambiente, parametros):
     salto, abaixar = decidir_acoes(ambiente, parametros)
     ambiente.definir_abaixada(abaixar)
     ambiente.avancar(salto)
+    return salto, abaixar

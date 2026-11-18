@@ -20,6 +20,11 @@ from geracoes import TreinoGeracoes
 
 
 class TestGravacao(unittest.TestCase):
+    def setUp(self):
+        gravador = patch("main.GravadorMetricas")
+        gravador.start()
+        self.addCleanup(gravador.stop)
+
     def test_jogo_avanca_enquanto_disco_esta_bloqueado_e_salva_ao_sair(self):
         iniciou = Event()
         liberar = Event()

@@ -239,6 +239,7 @@ def desenhar_populacao(tela, recursos, treino, detalhes=False):
         desenhar_decisao(tela, recursos, ambiente, lider, "treino", mostrar_sensor=False)
     pygame.draw.rect(tela, CREME, (0, 368, LARGURA, 32))
     recursos.texto(tela, "N PROXIMA GERACAO", 24, 380, escala=1)
+    recursos.texto(tela, "G GRAFICOS", 242, 380, escala=1)
     recursos.texto(tela, "ESC MENU", 380, 380, escala=1)
     recursos.texto(tela, "F11 TELA", 500, 380, escala=1)
     recursos.texto(tela, "F3 FPS", 580, 380, escala=1)

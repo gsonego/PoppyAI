@@ -23,6 +23,9 @@ from interface import RecursosInterface, desenhar_populacao, desenhar_poppy
 
 class TestGeracoes(unittest.TestCase):
     def setUp(self):
+        gravador = patch("main.GravadorMetricas")
+        gravador.start()
+        self.addCleanup(gravador.stop)
         self.pasta = tempfile.TemporaryDirectory()
         self.addCleanup(self.pasta.cleanup)
         self.caminho = Path(self.pasta.name) / "campeao.json"
@@ -163,6 +166,27 @@ class TestGeracoes(unittest.TestCase):
         self.assertEqual(self.treino.geracao, 2)
         _, tempo = carregar_campeao(self.caminho, None, SEMENTE_TREINO)
         self.assertAlmostEqual(tempo, 1.5)
+
+    def test_g_registra_parcial_e_solicita_graficos_sem_avancar_geracao(self):
+        eventos = []
+        self.treino._registrar = eventos.append
+        entrada = [[pygame.event.Event(pygame.KEYDOWN, key=pygame.K_g)],
+                   [pygame.event.Event(pygame.QUIT)]]
+        with patch.dict(os.environ, {"SDL_VIDEODRIVER": "dummy", "SDL_AUDIODRIVER": "dummy"}), \
+                contextlib.redirect_stdout(io.StringIO()), \
+                patch("main.GravadorMetricas") as gravador, \
+                patch("main.TreinoGeracoes", return_value=self.treino), \
+                patch("main.RelogioQuadros", RelogioTeste), \
+                patch("main.pygame.event.get", side_effect=entrada), \
+                patch("main.desenhar_populacao"):
+            main.main("treino")
+        gravador.return_value.solicitar_graficos.assert_called_once_with()
+        gravador.return_value.fechar.assert_called_once_with()
+        parciais = [e for e in eventos if e["tipo"] == "geracao"]
+        self.assertEqual(parciais[0]["motivo"], "grafico")
+        self.assertFalse(parciais[0]["concluida"])
+        self.assertEqual(parciais[-1]["motivo"], "saida")
+        self.assertEqual(self.treino.geracao, 1)
 
 
 if __name__ == "__main__":

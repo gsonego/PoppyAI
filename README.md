@@ -310,6 +310,64 @@ quando não há novo recorde. Ao reabrir, a contagem é retomada; a corrida reco
 com uma população criada a partir da campeã. O estado completo da população e
 do sorteio não é persistido. Arquivos antigos sem essa contagem começam em 1.
 
+## Gráficos e diagnóstico do treino
+
+No treino, **G** gera e abre um relatório local no navegador. O jogo continua
+enquanto outro processo desenha os gráficos. Pressione novamente para atualizar;
+pedidos feitos enquanto um relatório está sendo gerado são ignorados.
+
+O relatório mostra:
+
+- Melhor tempo, mediana da população e recorde ao longo das gerações observadas.
+- Quantas colisões ocorreram em cada obstáculo específico da sequência.
+- Tempo de cada morte, para enxergar barreiras recorrentes como 62,95 segundos.
+- Taxa de falhas entre as Poppys que realmente chegaram a cada obstáculo.
+- Reprodução da campeã salva, com as duas saídas da rede, altura e distância nos
+  segundos anteriores ao impacto. Saídas simultâneas evidenciam conflitos entre
+  saltar e abaixar; a política continua dando prioridade a abaixar.
+
+A coleta começa ao entrar no treino com esta versão; gerações anteriores não
+podem ser reconstruídas. Cada abertura do treino tem uma sessão própria, mesmo
+que retome o número de uma geração já observada. Parciais (G, saída ou N antes
+de todas morrerem) são identificadas e não contam como gerações concluídas.
+Atualizar o gráfico substitui o resumo parcial da mesma tentativa, sem duplicar
+colisões. Elites repetidas contam como novas tentativas; isso não significa que
+cada colisão corresponde a uma política diferente.
+
+O diário guarda identificação do obstáculo, tamanho, elevação, intervalo e
+obstáculo anterior, indivíduo, identificação dos pesos, entradas e comandos no
+impacto. Um encontro é a primeira sobreposição horizontal com o obstáculo,
+mesmo se a Poppy passar acima ou abaixo dele. A taxa inclui quem já chegou na
+geração em andamento; encontros ainda em curso podem não ter desfecho. Falhar
+muitas vezes sugere um gargalo, mas não demonstra impossibilidade física.
+
+O diagnóstico tenta um salto alternativo a partir do mesmo estado anterior à
+colisão. Encontrar uma passagem prova que aquele obstáculo pode ser superado;
+não encontrar não prova que seja impossível. A busca é limitada e não altera
+pesos, pontuação, semente nem a campeã salva. Se a campeã sobreviver por 120 s,
+o diagnóstico informa que atingiu esse limite de análise.
+
+Os eventos ficam em `dados/treinos/experimento_12.jsonl`; HTML, PNG e CSV ficam
+na pasta de mesmo nome, sem a extensão. Tudo fica fora do Git. O diário é
+gravado em segundo plano, preservando todos os eventos; uma falha nessa coleta
+é registrada no log e não encerra o jogo. Não há mudança nas regras do
+experimento ou no aprendizado.
+
+Também é possível gerar o relatório com o jogo fechado:
+
+```powershell
+.\.venv\Scripts\python.exe relatorio_treino.py --abrir
+```
+
+A análise usa Matplotlib, separado das dependências do jogo. Se estiver
+instalado no Python-base do ambiente virtual, o relatório o utiliza
+automaticamente em outro processo. Caso contrário, instale as dependências
+opcionais no ambiente virtual:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-analise.txt
+```
+
 ## Organização
 
 | Arquivo | Responsabilidade |
@@ -320,6 +378,9 @@ do sorteio não é persistido. Arquivos antigos sem essa contagem começam em 1.
 | `politica.py` | Observar cinco medidas, calcular a rede 5/4/2 e aplicar salto/abaixar. |
 | `treino.py` | Pontuar partidas, preservar a melhor configuração e gerar candidatas. |
 | `geracoes.py` | Simular 50 candidatas, eliminar colisões e selecionar a próxima geração. |
+| `metricas.py` | Gravar os eventos do treino em segundo plano e solicitar gráficos. |
+| `analise_treino.py` | Resumir eventos e reproduzir a campeã para diagnóstico. |
+| `relatorio_treino.py` | Gerar os gráficos, tabelas CSV e relatório HTML local. |
 | `avaliacao.py` | Carregar a campeã e acompanhar uma partida com parâmetros fixos. |
 | `humano.py` | Acompanhar a partida humana e salvar o recorde pessoal separado. |
 | `campeao.py` | Salvar e carregar a melhor configuração em JSON. |

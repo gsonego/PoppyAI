@@ -10,7 +10,7 @@ from politica import MODELO, QUANTIDADE_PARAMETROS
 
 
 # Incremente se mudar a física, observação, política ou geração de obstáculos.
-VERSAO_EXPERIMENTO = 10
+VERSAO_EXPERIMENTO = 11
 
 
 class GravadorCampeao:

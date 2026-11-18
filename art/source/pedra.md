@@ -8,10 +8,12 @@ Em pé, a Poppy passa com a corrida normal e sem alterar a altura. A pedra
 colide apenas com a faixa frontal de 12 pixels da área de colisão quando ela
 está abaixada. Não há novas poses nem mecânica de subir/descer um degrau.
 O salto também permite passar pela pedra isolada. Desde o experimento 10, nos três modos, cada pedra
-é seguida por um pássaro separado, com intervalo próximo de 0,3 segundo e no
-mínimo 90 pixels a partir da sua saída. A arte da pedra continua independente,
+é seguida por um pássaro separado, com intervalo próximo de 0,1 segundo e no
+mínimo 32 pixels a partir da sua saída. A arte da pedra continua independente,
 sem nenhuma ligação visual com o pássaro. A sequência penaliza saltos feitos
-perto da pedra; caminhar em pé permite atravessar os dois.
+perto da pedra; caminhar em pé permite atravessar os dois. Desde o experimento
+11, todo túnel é seguido de uma pedra com intervalo normal, e depois do pássaro.
+O intervalo curto atual é de 0,10 s, reduzido dos 0,30 s do experimento 10.
 
 Para regenerar a arte:
 

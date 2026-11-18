@@ -87,18 +87,22 @@ frontal de 12 pixels da sua colisão encontra a pedra. Saltar também permite
 passar. Depois que o focinho ultrapassa a rocha, pode abaixar novamente.
 A apresentação inicial é caixa, pedra, pássaro e túnel; depois,
 há uma chance de 1/5 de pedra antes dos demais sorteios. Cada pedra é seguida
-por um pássaro separado: sua frente vem cerca de 0,3 segundo depois da saída
-da pedra, com distância mínima de 90 pixels. O intervalo é calculado pela
+por um pássaro separado: sua frente vem cerca de 0,1 segundo depois da saída
+da pedra, com distância mínima de 32 pixels. O intervalo é calculado pela
 velocidade quando o pássaro é gerado. Correr em pé passa pelos dois; abaixar
 na pedra causa colisão, e saltar perto dela pode encontrar o pássaro logo depois.
 Pedra e pássaro têm posições, desenho, colisão e alvo independentes. Depois
 do pássaro, o próximo obstáculo volta a respeitar o intervalo normal completo.
-O experimento 10 leva essa mistura ao treino e à avaliação. As 50 candidatas
+O experimento 11 usa essa mistura no treino e na avaliação. As 50 candidatas
 enfrentam a mesma sequência e aprendem a alternar entre correr, saltar e abaixar.
 Altura e largura permitem distinguir a pedra das caixas, sem uma entrada com o
 nome do obstáculo. A rede continua 5/4/2, com 34 parâmetros. Ficar sempre abaixada
 agora falha na pedra; um salto antecipado ainda pode ser uma solução válida.
-O novo treino começa com pesos aleatórios e geração 1; o resultado do 9 é
+Todo túnel é seguido obrigatoriamente por uma pedra, mantendo o intervalo
+normal a partir da saída (no mínimo 567 pixels), e depois pelo pássaro próximo.
+Isso dá tempo de sair e levantar e impede dois túneis consecutivos.
+A rede continua livre para escolher a postura nos espaços entre obstáculos.
+O novo treino começa com pesos aleatórios e geração 1; o resultado do 10 é
 registrado no histórico antes do primeiro salvamento da nova campeã.
 
 No modo humano, a colisão mantém o resultado na tela; `R` repete a partida.
@@ -160,12 +164,12 @@ negativa até o alvo. Não há regras que forcem a ação por tipo de obstáculo
 A marca de distância única do antigo modelo linear foi retirada: a camada
 intermediária permite decisões que não têm um único limiar de salto.
 
-O experimento atual é o **10**, com 34 parâmetros: quatro blocos de cinco pesos
+O experimento atual é o **11**, com 34 parâmetros: quatro blocos de cinco pesos
 mais viés para a camada intermediária (24 valores), seguidos de dois blocos de
 quatro pesos mais viés para as saídas (10 valores), na ordem salto e abaixar.
 O arquivo único `dados/campeoes/campeao.json` guarda a arquitetura, os parâmetros,
 o experimento, o recorde e a geração atual. Ao iniciar a nova busca, pesos antigos
-não são reaproveitados. No primeiro salvamento, o resultado do experimento 9 é
+não são reaproveitados. No primeiro salvamento, o resultado do experimento 10 é
 registrado no histórico local antes da substituição da campeã.
 
 O recorde pessoal continua em `recorde_humano.json`, somente com o tempo, e vale

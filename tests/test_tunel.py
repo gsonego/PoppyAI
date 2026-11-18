@@ -132,7 +132,7 @@ class TestTunel(unittest.TestCase):
             self.assertEqual(treino.geracao, 1)
             self.assertIsNone(treino.melhores_parametros)
             treino.salvar_melhor(forcar=True)
-            self.assertEqual(VERSAO_EXPERIMENTO, 10)
+            self.assertEqual(VERSAO_EXPERIMENTO, 11)
             historico = json.loads(caminho.with_name("historico_experimentos.json").read_text())
             self.assertEqual((historico[0]["experimento"]["versao"], historico[0]["tempo_segundos"],
                               historico[0]["geracao_final"]), (8, 50, 73))

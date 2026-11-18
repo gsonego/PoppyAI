@@ -67,8 +67,8 @@ class TestExperimento10(unittest.TestCase):
             self.assertNotEqual(treino.parametros, politica_conhecida())
             treino.salvar_melhor(forcar=True)
             dados = json.loads(caminho.read_text())
-            self.assertEqual(dados["experimento"]["versao"], 10)
-            self.assertEqual(VERSAO_EXPERIMENTO, 10)
+            self.assertEqual(dados["experimento"]["versao"], 11)
+            self.assertEqual(VERSAO_EXPERIMENTO, 11)
             historico = json.loads(caminho.with_name("historico_experimentos.json").read_text())
             self.assertEqual((historico[0]["experimento"]["versao"], historico[0]["tempo_segundos"],
                               historico[0]["geracao_final"]), (9, 90, 42))

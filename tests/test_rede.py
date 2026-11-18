@@ -125,7 +125,7 @@ class TestRede(unittest.TestCase):
             self.assertEqual(treino.geracao, 1)
             self.assertIsNone(treino.melhores_parametros)
             treino.salvar_melhor(forcar=True)
-            self.assertEqual(VERSAO_EXPERIMENTO, 10)
+            self.assertEqual(VERSAO_EXPERIMENTO, 11)
             self.assertEqual(len(carregar_campeao(caminho, None, 123)[0]), 34)
             historico = json.loads(caminho.with_name("historico_experimentos.json").read_text())
             self.assertEqual((historico[0]["tempo_segundos"], historico[0]["geracao_final"]), (100, 70))

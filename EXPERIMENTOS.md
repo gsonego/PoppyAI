@@ -14,7 +14,8 @@ Ordem baseada nas mudanças registradas no projeto. O número corresponde a
 | 7 | Intervalos variáveis e progressivamente menores entre obstáculos, com uma distância mínima que permite completar o salto. |
 | 8 | Rede com cinco entradas (incluindo elevação), quatro neurônios intermediários com tanh e duas saídas de degrau: salto e abaixar. São 34 pesos e vieses. Os voadores passam a participar do treino e da avaliação. |
 | 9 | Bumerangue substituído por túnel de 120, 200 ou 280 pixels, com passagem fixa de 42 pixels e bloqueio superior intransponível por salto. Mesma rede 5/4/2; o alvo continua sendo o túnel até a traseira da Poppy sair. |
-| 10 (atual) | Pedras baixas e pássaros separados logo depois entram também no treino e na avaliação. A pedra permite correr em pé, mas atinge o focinho abaixado; saltar perto dela pode encontrar o pássaro. Mesma rede 5/4/2, novos pesos e geração 1. |
+| 10 | Pedras baixas e pássaros separados logo depois entram também no treino e na avaliação. A pedra permite correr em pé, mas atinge o focinho abaixado; saltar perto dela pode encontrar o pássaro. Mesma rede 5/4/2, novos pesos e geração 1. |
+| 11 (atual) | Pássaro chega mais perto da pedra: atraso de 0,10 s e distância mínima de 32 px (antes 0,30 s e 90 px). Todo túnel passa a ser seguido por pedra, com o intervalo normal contado da saída, e depois pelo pássaro. Sem dois túneis consecutivos. Mesma rede 5/4/2, novos pesos e geração 1. |
 
 Melhorias de interface, animação das patas, chão móvel, interpolação, VSync e
 paralaxe não alteraram o modelo ou as regras e não abriram novos experimentos.

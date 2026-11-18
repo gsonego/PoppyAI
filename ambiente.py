@@ -116,9 +116,7 @@ class Ambiente:
         if self.incluir_pedras and (self._primeira_pedra or (
             apresentacao_concluida and self.gerador_obstaculos.randrange(5) == 0
         )):
-            self._primeira_pedra = False
-            retangulo = pygame.Rect(round(x), CHAO_Y - PEDRA_ALTURA, PEDRA_LARGURA, PEDRA_ALTURA)
-            return GrupoObstaculo(retangulo, float(x), "pedra")
+            return self._criar_pedra(x)
         if self.incluir_passarinhos and not self._primeiro_tunel:
             # Apresenta os três desafios antes de passar à mistura aleatória.
             if self._primeiro_passarinho or self.gerador_obstaculos.randrange(4) == 0:
@@ -149,6 +147,11 @@ class Ambiente:
         retangulo = pygame.Rect(round(x), CHAO_Y - altura, largura, altura)
         return GrupoObstaculo(retangulo, float(x), tipo)
 
+    def _criar_pedra(self, x):
+        self._primeira_pedra = False
+        retangulo = pygame.Rect(round(x), CHAO_Y - PEDRA_ALTURA, PEDRA_LARGURA, PEDRA_ALTURA)
+        return GrupoObstaculo(retangulo, float(x), "pedra")
+
     def _criar_passarinho(self, x):
         self._primeiro_passarinho = False
         retangulo = pygame.Rect(round(x), PASSARINHO_CENTRO_Y - PASSARINHO_ALTURA // 2,
@@ -176,7 +179,12 @@ class Ambiente:
                 proximo = self._criar_passarinho(anterior.x + anterior.retangulo.width + intervalo)
             else:
                 intervalo = self._sortear_intervalo()
-                proximo = self._sortear_obstaculo(anterior.x + anterior.retangulo.width + intervalo)
+                x = anterior.x + anterior.retangulo.width + intervalo
+                if anterior.tipo == "tunel" and self.incluir_pedras:
+                    # Exige levantar após o túnel; mantém toda a margem de reação.
+                    proximo = self._criar_pedra(x)
+                else:
+                    proximo = self._sortear_obstaculo(x)
             proximo.intervalo_anterior = intervalo
             self.grupos.append(proximo)
         self._alvo = next((g for g in self.grupos if g.retangulo.right > self.personagem.left), self.grupos[-1])
